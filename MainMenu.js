@@ -11,7 +11,7 @@ BasicGame.MainMenu.prototype = {
         //	Here all we're doing is playing some music and adding a picture and button
         //	Naturally I expect you to do something significantly better :)
 
-        this.playButton = this.add.button(400, 600, 'playButton', this.startGame, this);
+        this.playButton = this.add.button(200, 300, 'playButton', this.startGame, this);
     },
 
     update: function () {

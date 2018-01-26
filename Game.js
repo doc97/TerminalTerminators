@@ -56,10 +56,7 @@ BasicGame.Game = function (game) {
 
     //  You can use any of these from any function within this State.
     //  But do consider them as being 'reserved words', i.e. don't create a property for your own game called "world" or you'll over-write the world reference.
-    this.nextLine = function() {};
-    this.nextWord = function() {};
-    nextLine: function() {
-        console.log('hheelo');
+    this.nextLine = function() {
         if (lineIndex === content.length) {
             //  We're finished
             return;
@@ -76,9 +73,9 @@ BasicGame.Game = function (game) {
         
         //  Advance to the next line
         lineIndex++;
-    },
+    }
             
-    nextWord: function() {
+    this.nextWord = function() {
         //  Add the next word onto the text string, followed by a space
         text.text = text.text.concat(line[wordIndex] + " ");
         
@@ -93,7 +90,7 @@ BasicGame.Game = function (game) {
             //  Get the next line after the lineDelay amount of ms has elapsed
             this.time.events.add(lineDelay, this.nextLine, this);
         }
-    },
+    }
 
 };
 
@@ -101,7 +98,7 @@ BasicGame.Game.prototype = {
     
     create: function () {
         // Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
-        text = this.add.text(32, 32, 'heeelo', { font: "15px Arial", fill: "#19de65" });
+        text = this.add.text(32, 32, '', { font: "15px Arial", fill: "#19de65" });
         this.nextLine();
     },
 
