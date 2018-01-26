@@ -31,8 +31,6 @@ var lineIndex = 0;
 var wordDelay = 120;
 var lineDelay = 400;
 
-
-
 BasicGame.Game = function (game) {
 
     //  When a State is added to Phaser it automatically has the following properties set on it, even if they already exist:
@@ -53,6 +51,9 @@ BasicGame.Game = function (game) {
     this.particles; //  the particle manager (Phaser.Particles)
     this.physics;   //  the physics manager (Phaser.Physics)
     this.rnd;       //  the repeatable random number generator (Phaser.RandomDataGenerator)
+
+    this.enterKey;
+    this.backspaceKey;
 
     //  You can use any of these from any function within this State.
     //  But do consider them as being 'reserved words', i.e. don't create a property for your own game called "world" or you'll over-write the world reference.
@@ -92,18 +93,38 @@ BasicGame.Game = function (game) {
         }
     }
 
+    this.keyPress = function(char) {
+        command.setText(command.text + char, true);
+    }
+
+    this.enterCmd = function() {
+        command.setText('$ ', true);
+    }
+    
+    this.deleteChar = function() {
+        if (command.text.length > 2) {
+            command.setText(command.text.substring(0, command.text.length - 1));
+        }
+    }
 };
 
 BasicGame.Game.prototype = {
     
     create: function () {
         // Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
-        text = this.add.text(32, 32, '', { font: "15px Arial", fill: "#19de65" });
-        this.nextLine();
+        //text = this.add.text(32, 32, '', { font: "15px Arial", fill: "#19de65" });
+        command = this.add.text(16, this.world.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
+
+        this.input.keyboard.addCallbacks(this, null, null, this.keyPress);
+        this.enterKey = this.input.keyboard.addKey(Phaser.Keyboard.ENTER);
+        this.enterKey.onDown.add(this.enterCmd, this);
+        this.backspaceKey = this.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE);
     },
 
     update: function () {
         //  Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
+        if (this.backspaceKey.isDown)
+            this.deleteChar();
     },
 
     quitGame: function (pointer) {
