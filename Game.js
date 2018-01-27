@@ -31,7 +31,7 @@ class Virus {
                     this.distY = this.dest.y - this.src.y;
                 } else {
                     this.progress = 1;
-                    this.kill();
+                    this.destroy();
                     return;
                 }
             }
@@ -42,9 +42,9 @@ class Virus {
             this.sprite.y = this.y;
         }
 
-        this.kill = function() {
+        this.destroy = function() {
             delete this.network.viruses[name];
-            this.sprite.kill();
+            this.sprite.destroy();
         }
 
         // Start spawn sequence
@@ -308,6 +308,82 @@ class Terminal {
     }
 }
 
+/* Pause menu */
+class PauseMenu {
+    constructor(state) {
+        this.create = function() {
+            console.log('Create menu');
+            this.state = state;
+            this.menu;
+            // Create a label to use as a button
+            this.pauseButton = state.add.button(state.camera.width - 70, 40, 'pauseButton', function(str) {
+                // When the pause button is pressed, we pause the game
+                this.state.paused = true;
+        
+                // Then add the menu
+                this.menu = this.state.add.sprite(this.state.camera.width / 2, this.state.camera.height / 2, 'menu');
+                this.menu.anchor.setTo(0.5, 0.5);
+                this.menu.fixedToCamera = true;
+        
+                // And a label to illustrate which menu item was chosen. (This is not necessary)
+                this.choiseLabel = this.state.add.text(this.state.camera.width / 2, 30, 'Click outside to continue', { font: '30px Arial', fill: '#ffffff' });
+                this.choiseLabel.anchor.setTo(0.5, 0.5);
+                this.choiseLabel.fixedToCamera = true;
+            }, this);
+            this.pauseButton.anchor.setTo(0.5, 0.5);
+            this.pauseButton.fixedToCamera = true;
+            
+        
+            // And finally the method that handels the pause menu
+            this.unpause = function(event) {
+                // Only act if paused
+                if (this.state.paused) {
+                    // Calculate the corners of the menu
+                    var x1 = this.state.camera.width / 2 - this.menu.width / 2 , x2 = this.state.camera.width / 2 + this.menu.width / 2,
+                        y1 = this.state.camera.height / 2 - this.menu.height / 2, y2 = this.state.camera.height / 2 + this.menu.height / 2;
+        
+                    // Check if the click was inside the menu
+                    if (event.x > x1 && event.x < x2 && event.y > y1 && event.y < y2 ) {
+                        // The choicemap is an array that will help us see which item was clicked
+                        var choisemap = ['one', 'two', 'three', 'four'];
+        
+                        // Get menu local coordinates for the click
+                        var x = event.x - x1,
+                            y = event.y - y1;
+                       
+                        // Calculate the choice
+                        var choise = Math.floor(x / (this.menu.width / 2)) + 2 * Math.floor(y / (this.menu.height / 2));
+                        
+                        // Display the choice
+                        // choiseLabel.text = 'You press: ' + choisemap[choise];
+                        switch (choise) {
+                            case 0:
+                                this.menu.destroy();
+                                this.choiseLabel.destroy();
+                                this.state.state.start('MainMenu');
+                                break;
+                            case 1:
+                                this.settings = this.state.add.sprite(this.state.camera.width / 2, this.state.camera.height / 2, 'settings');
+                                this.settings.anchor.setTo(0.5, 0.5);
+                                this.settings.fixedToCamera = true;
+                                break;
+                        }
+                    } else {
+                        // Remove the menu and the label
+                        this.menu.destroy();
+                        this.choiseLabel.destroy();
+        
+                        // Unpause the game
+                        this.state.paused = false;
+                    }
+                }
+            };
+
+            // Add a input listener that can help us return from being paused
+            state.input.onDown.add(this.unpause, this);
+        };
+    }
+}
 
 
 /* Game code */
@@ -333,7 +409,7 @@ BasicGame.Game = function (game) {
     this.physics;   // the physics manager (Phaser.Physics)
     this.rnd;       // the repeatable random number generator
 
-
+    this.paused = false;
     this.network;
     this.view = 0; // 0 = terminal, 1 = map
     this.switch = function() {
@@ -368,74 +444,10 @@ BasicGame.Game.prototype = {
 
         tabKey = this.input.keyboard.addKey(Phaser.Keyboard.TAB);
         tabKey.onDown.add(this.switch, this);
-
-
-        /*
-         * Code for the pause menu
-         */
-
-        // Create a label to use as a button
-        pauseButton = this.add.button(this.camera.width - 70, 40, 'pauseButton', function(str) {
-            // When the pause button is pressed, we pause the game
-            this.paused = true;
-    
-            // Then add the menu
-            menu = this.add.sprite(this.camera.width/2, this.camera.height/2, 'menu');
-            menu.anchor.setTo(0.5, 0.5);
-            menu.fixedToCamera = true;
-    
-            // And a label to illustrate which menu item was chosen. (This is not necessary)
-            choiseLabel = this.add.text(this.camera.width/2, 30, 'Click outside to continue', { font: '30px Arial', fill: '#ffffff' });
-            choiseLabel.anchor.setTo(0.5, 0.5);
-            choiseLabel.fixedToCamera = true;
-        }, this);
-        pauseButton.anchor.setTo(0.5, 0.5);
-        pauseButton.fixedToCamera = true;
-	
-        // Add a input listener that can help us return from being paused
-        this.input.onDown.add(unpause, this);
-    
-        // And finally the method that handels the pause menu
-        function unpause(event){
-            // Only act if paused
-            if(this.paused){
-                // Calculate the corners of the menu
-                var x1 = this.camera.width/2 - menu.width/2 , x2 = this.camera.width/2 + menu.width/2,
-                    y1 = this.camera.height/2 - menu.height/2, y2 = this.camera.height/2 + menu.height/2;
-    
-                // Check if the click was inside the menu
-                if(event.x > x1 && event.x < x2 && event.y > y1 && event.y < y2 ){
-                    // The choicemap is an array that will help us see which item was clicked
-                    var choisemap = ['one', 'two', 'three', 'four'];
-    
-                    // Get menu local coordinates for the click
-                    var x = event.x - x1,
-                        y = event.y - y1;
-                   
-                    // Calculate the choice
-                    var choise = Math.floor(x / (menu.width/2)) + 2*Math.floor(y / (menu.height/2));
-                    
-                    // Display the choice
-                    // choiseLabel.text = 'You press: ' + choisemap[choise];
-                    switch (choise){
-                    case 0:
-                            this.state.start('MainMenu');
-                            break;
-                    case 1:
-                            settings = this.add.sprite(this.camera.width/2, this.camera.height/2, 'settings');
-                            settings.anchor.setTo(0.5, 0.5);
-                            settings.fixedToCamera = true;
-                    }
-                } else{
-                    // Remove the menu and the label
-                    menu.destroy();
-                    choiseLabel.destroy();
-    
-                    // Unpause the game
-                    this.paused = false;
-                }
-            }
-        }
+        
+        if (this.pauseMenu == null)
+            this.pauseMenu = new PauseMenu(this);
+        this.pauseMenu.create();
     },
 
     update: function () {
