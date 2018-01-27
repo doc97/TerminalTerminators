@@ -1,7 +1,91 @@
+class Node {
+    /* 
+     * integer x: X-position in world coordinates
+     * integer y: Y-position in world coordinates
+     * string id: The character displayed on the node
+     * Phaser.State state: Use 'this'
+     */
+    constructor(x, y, id, state) {
+        this.x = x;
+        this.y = y;
+        this.idText = state.add.text(x, y, id, { font: '15px Arial', fill: '#ffffff' });
+        this.children = [];
+        this.paths = [];
+
+        this.render = function(state) {
+            for (var i = 0; i < this.paths.length; ++i) {
+                state.game.debug.geom(this.paths[i]);
+            }
+        }
+
+        this.addChild = function(node) {
+            this.children.push(node);
+            this.paths.push(new Phaser.Line(this.x, this.y, node.x, node.y));
+        };
+
+        this.destroy = function() {
+            this.idText.kill();
+        };
+    }
+}
+
+class Network {
+    /*
+     * integer[] layers: Amount of nodes per layers
+     */
+    constructor(layers, state) {
+        this.nodes = [];
+
+        var alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
+        var nodeDistanceX = 64;
+        var nodeDistanceY = 96;
+
+        // Create nodes
+        for (var i = 0; i < layers.length; ++i) {
+            var nodeCount = layers[i];
+            for (var j = 0; j < nodeCount; ++j) {
+                var offset = 0.0;
+                if (nodeCount % 2 == 0)
+                    offset = -0.5;
+
+                var x = state.world.width / 2 - (nodeDistanceX * (offset + Math.floor(nodeCount / 2))) + j * nodeDistanceX;
+                var y = state.world.height / 2 + i * nodeDistanceY;
+                var index = i * layers.length + j;
+                var node = new Node(x, y, alphabet[index], state);
+                this.nodes.push(node);
+            }
+        }
+
+        // Create paths
+        for (var i = 0; i < layers.length - 1; ++i) {
+            var nodeCount = layers[i];
+            for (var j = 0; j < nodeCount; ++j) {
+                for (var k = 0; k < layers[i + 1]; ++k) {
+                    var index = i * layers.length + j;
+                    var childIndex = index - j + nodeCount + k;
+                    var child = this.nodes[childIndex];
+                    console.log(i + ', ' + j + ', ' + k);
+                    console.log(child);
+                    this.nodes[index].addChild(this.nodes[childIndex]);
+                }
+            }
+        }
+
+        this.render = function(state) {
+            for (var i = 0; i < this.nodes.length; ++i) {
+                this.nodes[i].render(state);
+            }
+        }
+    }
+}
+
 class Terminal {
-    constructor(state) {
-        this.command = state.add.text(16, state.world.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
-        this.buffer = state.add.text(16, state.world.height - 32, '', { font: '15px Arial', fill: '#ffffff' });
+    /*
+    * Phaser.State state: Use 'this'
+    */
+   constructor(state) {
+        this.command = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
+        this.buffer = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '', { font: '15px Arial', fill: '#ffffff' });
         this.buffer.anchor.setTo(0, 1);
 
         state.input.keyboard.addCallbacks(this, null, null, function(ch) { this.command.setText(this.command.text + ch, true); });
@@ -105,23 +189,46 @@ BasicGame.Game = function (game) {
 
     // You can use any of these from any function within this State.
     // But do consider them as being 'reserved words', i.e. don't create a
-	// property for your own game called "world" or you'll over-write the world
-	// reference.
+    // property for your own game called "world" or you'll over-write the world
+    // reference.
+
+    this.view = 0; // 0 = terminal, 1 = map
+
+    this.switch = function() {
+        if (this.view == 0) {
+            console.log(this.view);
+            this.camera.y = this.world.height - 2 * (this.camera.height - 32);
+            this.view = 1;
+        } else {
+            console.log(this.view);
+            this.camera.y = this.world.height - this.camera.height;
+            this.view = 0;
+        }
+    };
+
 };
 
 BasicGame.Game.prototype = {
     
     create: function () {
-        // Honestly, just about anything could go here. It's YOUR game after
-		// all. Eat your heart out!
-        // text = this.add.text(32, 32, '', { font: "15px Arial", fill:
-		// "#19de65" });
-        terminal = new Terminal(this);
+        // Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
+        // text = this.add.text(32, 32, '', { font: "15px Arial", fill: "#19de65" });
         // this.nextLine();
 
+        // Camera origin: upper-left
+        this.camera.setSize(640, 480);
+        this.world.resize(this.camera.width * 3, this.camera.height * 3);
+        this.camera.setPosition((this.world.width - this.camera.width) / 2, this.world.height - this.camera.height);
+        terminal = new Terminal(this);
+        network = new Network([3, 4, 2], this);
+
+        tabKey = this.input.keyboard.addKey(Phaser.Keyboard.TAB);
+        tabKey.onDown.add(this.switch, this);
+
+
         /*
-		 * Code for the pause menu
-		 */
+         * Code for the pause menu
+         */
 
         // Create a label to use as a button
         pauseButton = this.add.button(this.world.width - 70, 40, 'pauseButton', function(str) {
@@ -192,6 +299,11 @@ BasicGame.Game.prototype = {
         // Honestly, just about anything could go here. It's YOUR game after
 		// all. Eat your heart out!
     }, 
+
+    render: function() {
+        network.render(this);
+        this.game.debug.cameraInfo(this.camera, 300, 32);
+    }
 };
 
 
