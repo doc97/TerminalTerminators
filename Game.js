@@ -1,10 +1,9 @@
 class Virus {
     /*
-     * string name: The name and 'id' of the virus
-     * Node spawnNode: The node the virus spawns at
-     * Network network: Reference to the Network
-     * Phaser.State state: Use 'this'
-     */
+	 * string name: The name and 'id' of the virus Node spawnNode: The node the
+	 * virus spawns at Network network: Reference to the Network Phaser.State
+	 * state: Use 'this'
+	 */
     constructor(name, spawnNode, network, state) {
         this.name = name;
         this.network = network;
@@ -54,9 +53,8 @@ class Virus {
 
 class Attacker {
     /*
-     * Network network: Reference to the Network 
-     * Phaser.State state: Use 'this'
-     */
+	 * Network network: Reference to the Network Phaser.State state: Use 'this'
+	 */
     constructor(network, state) {
         this.network = network;
         this.state = state;
@@ -88,12 +86,11 @@ class Attacker {
 }
 
 class Node {
-    /* 
-     * integer x: X-position in world coordinates
-     * integer y: Y-position in world coordinates
-     * string id: The character displayed on the node
-     * Phaser.State state: Use 'this'
-     */
+    /*
+	 * integer x: X-position in world coordinates integer y: Y-position in world
+	 * coordinates string id: The character displayed on the node Phaser.State
+	 * state: Use 'this'
+	 */
     constructor(x, y, id, state) {
         this.x = x;
         this.y = y;
@@ -133,9 +130,9 @@ class Node {
 
 class Network {
     /*
-     * integer[] layers: Amount of nodes per layers
-     * Phaser.State state: Use 'this'
-     */
+	 * integer[] layers: Amount of nodes per layers Phaser.State state: Use
+	 * 'this'
+	 */
     constructor(layers, state) {
         this.MAX_TRAP_COUNT = 2;
         this.trapCount = 0;
@@ -246,8 +243,8 @@ class Network {
 
 class Terminal {
     /*
-    * Phaser.State state: Use 'this'
-    */
+	 * Phaser.State state: Use 'this'
+	 */
     constructor(state) {
         this.state = state;
         this.command = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
@@ -325,7 +322,8 @@ class PauseMenu {
                 this.menu.anchor.setTo(0.5, 0.5);
                 this.menu.fixedToCamera = true;
         
-                // And a label to illustrate which menu item was chosen. (This is not necessary)
+                // And a label to illustrate which menu item was chosen. (This
+				// is not necessary)
                 this.choiseLabel = this.state.add.text(this.state.camera.width / 2, 30, 'Click outside to continue', { font: '30px Arial', fill: '#ffffff' });
                 this.choiseLabel.anchor.setTo(0.5, 0.5);
                 this.choiseLabel.fixedToCamera = true;
@@ -339,12 +337,13 @@ class PauseMenu {
                 // Only act if paused
                 if (this.state.paused) {
                     // Calculate the corners of the menu
-                    var x1 = this.state.camera.width / 2 - this.menu.width / 2 , x2 = this.state.camera.width / 2 + this.menu.width / 2,
-                        y1 = this.state.camera.height / 2 - this.menu.height / 2, y2 = this.state.camera.height / 2 + this.menu.height / 2;
+                		var x1 = this.state.camera.width / 2 - this.menu.width / 2 , x2 = this.state.camera.width / 2 + this.menu.width / 2;
+                        var y1 = this.state.camera.height / 2 - this.menu.height / 2, y2 = this.state.camera.height / 2 + this.menu.height / 2;
         
                     // Check if the click was inside the menu
                     if (event.x > x1 && event.x < x2 && event.y > y1 && event.y < y2 ) {
-                        // The choicemap is an array that will help us see which item was clicked
+                        // The choicemap is an array that will help us see which
+						// item was clicked
                         var choisemap = ['one', 'two', 'three', 'four'];
         
                         // Get menu local coordinates for the click
@@ -361,12 +360,17 @@ class PauseMenu {
                                 this.menu.destroy();
                                 this.choiseLabel.destroy();
                                 this.state.state.start('MainMenu');
-                                break;
-                            case 1:
-                                this.settings = this.state.add.sprite(this.state.camera.width / 2, this.state.camera.height / 2, 'settings');
-                                this.settings.anchor.setTo(0.5, 0.5);
-                                this.settings.fixedToCamera = true;
-                                break;
+                                this.state.sound.stopAll();
+        	                	break;
+        	                case 1:
+        	                	if (this.state.sound.mute === false){
+        	                		this.state.sound.pauseAll();
+        	                		this.state.sound.mute = true;
+        	                	} else{
+        	                		this.state.sound.resumeAll();
+        	                		this.state.sound.mute = false;
+        	                	}
+                                
                         }
                     } else {
                         // Remove the menu and the label
@@ -393,13 +397,17 @@ BasicGame.Game = function (game) {
     // properties set on it, even if they already exist:
 
     this.game;      // a reference to the currently running game (Phaser.Game)
-    this.add;       // used to add sprites, text, groups, etc (Phaser.GameObjectFactory)
+    this.add;       // used to add sprites, text, groups, etc
+					// (Phaser.GameObjectFactory)
     this.camera;    // a reference to the game camera (Phaser.Camera)
     this.cache;     // the game cache (Phaser.Cache)
-    this.input;     // the global input manager. You can access this.input.keyboard, this.input.mouse, as well from it. (Phaser.Input)
+    this.input;     // the global input manager. You can access
+					// this.input.keyboard, this.input.mouse, as well from it.
+					// (Phaser.Input)
     this.load;      // for preloading assets (Phaser.Loader)
     this.math;      // lots of useful common math operations (Phaser.Math)
-    this.sound;     // the sound manager - add a sound, play one, set-up markers, etc (Phaser.SoundManager)
+    this.sound;     // the sound manager - add a sound, play one, set-up
+					// markers, etc (Phaser.SoundManager)
     this.stage;     // the game stage (Phaser.Stage)
     this.time;      // the clock (Phaser.Time)
     this.tweens;    // the tween manager (Phaser.TweenManager)
@@ -408,7 +416,7 @@ BasicGame.Game = function (game) {
     this.particles; // the particle manager (Phaser.Particles)
     this.physics;   // the physics manager (Phaser.Physics)
     this.rnd;       // the repeatable random number generator
-
+    
     this.paused = false;
     this.network;
     this.view = 0; // 0 = terminal, 1 = map
@@ -426,9 +434,15 @@ BasicGame.Game = function (game) {
 BasicGame.Game.prototype = {
     
     create: function () {
-        // Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
-
-        // Camera origin: upper-left
+        // Honestly, just about anything could go here. It's YOUR game after
+		// all. Eat your heart out!
+    	// Music stuff
+    	this.sound.play('track1');
+    	var mute = false;
+    	
+    	// Camera origin: upper-left
+    	
+    	
         this.camera.setSize(640, 480);
         this.world.resize(this.camera.width * 3, this.camera.height * 3);
         this.camera.setPosition((this.world.width - this.camera.width) / 2, this.world.height - this.camera.height);
@@ -444,15 +458,13 @@ BasicGame.Game.prototype = {
 
         tabKey = this.input.keyboard.addKey(Phaser.Keyboard.TAB);
         tabKey.onDown.add(this.switch, this);
+
         
         if (this.pauseMenu == null)
             this.pauseMenu = new PauseMenu(this);
         this.pauseMenu.create();
-    },
-
-    update: function () {
-        // Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
-    }
-};
+	    
+    }   
+}
 
 
