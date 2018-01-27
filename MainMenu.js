@@ -13,8 +13,9 @@ BasicGame.MainMenu.prototype = {
 		// button
         // Naturally I expect you to do something significantly better :)
 
-        playButton = this.add.button(this.world.width/2, this.world.height/2, 'playButton', this.startGame, this);
+        playButton = this.add.button(this.camera.width/2, this.camera.height/2, 'playButton', this.startGame, this);
         playButton.anchor.setTo(0.5, 0.5);
+        playButton.fixedToCamera = true;
     },
 
     update: function () {
