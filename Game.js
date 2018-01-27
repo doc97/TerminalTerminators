@@ -166,7 +166,15 @@ BasicGame.Game.prototype = {
 	                var choise = Math.floor(x / (menu.width/2)) + 2*Math.floor(y / (menu.height/2));
 	                
 	                // Display the choice
-	                choiseLabel.text = 'You press: ' + choisemap[choise];
+	                // choiseLabel.text = 'You press: ' + choisemap[choise];
+	                switch (choise){
+	                case 0:
+	                	this.state.start('MainMenu');
+	                	break;
+	                case 1:
+	                	settings = this.add.sprite(this.world.width/2, this.world.height/2, 'settings');
+	        	        settings.anchor.setTo(0.5, 0.5);
+	                }
 	            }
 	            else{
 	                // Remove the menu and the label
@@ -183,18 +191,7 @@ BasicGame.Game.prototype = {
     update: function () {
         // Honestly, just about anything could go here. It's YOUR game after
 		// all. Eat your heart out!
-    },
-
-    quitGame: function (pointer) {
-        // Here you should destroy anything you no longer need.
-        // Stop music, delete sprites, purge caches, free resources, all that
-		// good stuff.
-    	terminal.destroy();
-
-        // Then let's go back to the main menu.
-        this.state.start('MainMenu');
-
-    }
+    }, 
 };
 
 
