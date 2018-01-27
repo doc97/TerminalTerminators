@@ -8,19 +8,23 @@ class Node {
     constructor(x, y, id, state) {
         this.x = x;
         this.y = y;
+        this.id = id;
         this.idText = state.add.text(x, y, id, { font: '15px Arial', fill: '#ffffff' });
-        this.children = [];
-        this.paths = [];
+        this.children = {};
+        this.activePath = null;
+        this.state = state;
 
-        this.render = function(state) {
-            for (var i = 0; i < this.paths.length; ++i) {
-                state.game.debug.geom(this.paths[i]);
+        this.selectChild = function(id) {
+            if (id in this.children) {
+                this.activePath = this.children[id];
+                console.log(this.id + ' redirecting to ' + id);
+            } else {
+                console.log(this.id + ' -!>' + id);
             }
         }
 
         this.addChild = function(node) {
-            this.children.push(node);
-            this.paths.push(new Phaser.Line(this.x, this.y, node.x, node.y));
+            this.children[node.id] = node;
         };
 
         this.destroy = function() {
@@ -34,46 +38,79 @@ class Network {
      * integer[] layers: Amount of nodes per layers
      */
     constructor(layers, state) {
-        this.nodes = [];
+        this.nodes = {};
+        this.alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
 
-        var alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
         var nodeDistanceX = 64;
         var nodeDistanceY = 96;
 
         // Create nodes
+        var index = 0;
         for (var i = 0; i < layers.length; ++i) {
             var nodeCount = layers[i];
-            for (var j = 0; j < nodeCount; ++j) {
+            for (var j = 0; j < nodeCount; ++j, ++index) {
                 var offset = 0.0;
                 if (nodeCount % 2 == 0)
                     offset = -0.5;
 
                 var x = state.world.width / 2 - (nodeDistanceX * (offset + Math.floor(nodeCount / 2))) + j * nodeDistanceX;
                 var y = state.world.height / 2 + i * nodeDistanceY;
-                var index = i * layers.length + j;
-                var node = new Node(x, y, alphabet[index], state);
-                this.nodes.push(node);
+                var id = this.alphabet[index];
+                this.nodes[id] = new Node(x, y, id, state);
             }
         }
 
         // Create paths
+
+        var graphics = state.add.graphics(0, 0);
+        
+        index = 0;
         for (var i = 0; i < layers.length - 1; ++i) {
             var nodeCount = layers[i];
-            for (var j = 0; j < nodeCount; ++j) {
+            for (var j = 0; j < nodeCount; ++j, ++index) {
                 for (var k = 0; k < layers[i + 1]; ++k) {
-                    var index = i * layers.length + j;
                     var childIndex = index - j + nodeCount + k;
-                    var child = this.nodes[childIndex];
-                    console.log(i + ', ' + j + ', ' + k);
-                    console.log(child);
-                    this.nodes[index].addChild(this.nodes[childIndex]);
+                    var child = this.nodes[this.alphabet[childIndex]];
+                    var node = this.nodes[this.alphabet[index]];
+
+                    if (child !== undefined) {
+                        node.addChild(child);
+
+                        graphics.beginFill(0xff0000);
+                        graphics.lineStyle(2, 0xff0000, 1);
+                        graphics.moveTo(node.x, node.y);
+                        graphics.lineTo(child.x, child.y);
+                    }
                 }
             }
         }
+        graphics.endFill();
+        var camX = state.world.width / 2;
+        var camY = state.world.height - 1.5 * (state.camera.height - 64);
+        var sprite = state.add.sprite(camX, camY, graphics.generateTexture());
+        sprite.anchor.setTo(0.5, 0.5);
+        graphics.destroy();
 
-        this.render = function(state) {
-            for (var i = 0; i < this.nodes.length; ++i) {
-                this.nodes[i].render(state);
+
+        // Select paths
+        var index = 0;
+        for (var i = 0; i < layers.length - 1; ++i) {
+            var nodeCount = layers[i];
+            for (var j = 0; j < nodeCount; ++j, index++) {
+                var childOffset = state.rnd.between(0, layers[i + 1]- 1);
+                var childIndex = index - j + nodeCount + childOffset;
+                this.nodes[this.alphabet[index]].selectChild(this.alphabet[childIndex]);
+            }
+        }
+
+        this.redirect = function(aId, bId) {
+            var nodeA = this.nodes[aId];
+            var nodeB = nodeA.children[bId];
+            if (nodeA !== undefined && nodeB !== undefined) {
+                nodeA.selectChild(bId);
+                return true;
+            } else {
+                return false;
             }
         }
     }
@@ -83,7 +120,8 @@ class Terminal {
     /*
     * Phaser.State state: Use 'this'
     */
-   constructor(state) {
+    constructor(state) {
+        this.state = state;
         this.command = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
         this.buffer = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '', { font: '15px Arial', fill: '#ffffff' });
         this.buffer.anchor.setTo(0, 1);
@@ -101,6 +139,19 @@ class Terminal {
                 this.buffer.setText('');
             } else if (cmd[0] === 'print' && cmd.length > 1) {
                 this.buffer.setText(this.buffer.text + '\n' + cmd[1]);
+            } else if (cmd[0] === 'redirect' && cmd.length > 2) {
+                if (this.state.network.redirect(cmd[1], cmd[2])) {
+                    this.buffer.setText(this.buffer.text + '\n' + 'Redirected traffic from ' + cmd[1] + ' to ' + cmd[2]);
+                } else {
+                    this.buffer.setText(this.buffer.text + '\n' + 'Cannot redirect traffic from ' + cmd[1] + ' to ' + cmd[2]);
+                }
+            } else if (cmd[0] === 'path' && cmd.length > 1) {
+                var node = this.state.network.nodes[cmd[1]];
+                if (node !== undefined) {
+                    this.buffer.setText(this.buffer.text + '\n' + node.id + ' currently redirects traffic to ' + node.activePath.id);
+                } else {
+                    this.buffer.setText(this.buffer.text + '\n' + 'No node with id ' + node.id + '!');
+                }
             } else {
                 this.command.setText('$ ', true);
                 this.buffer.setText(this.buffer.text + '\n' + cmd + ': command not found');
@@ -149,19 +200,17 @@ BasicGame.Game = function (game) {
     this.rnd;       // the repeatable random number generator
 
 
+    this.network;
     this.view = 0; // 0 = terminal, 1 = map
     this.switch = function() {
         if (this.view == 0) {
-            console.log(this.view);
             this.camera.y = this.world.height - 2 * (this.camera.height - 32);
             this.view = 1;
         } else {
-            console.log(this.view);
             this.camera.y = this.world.height - this.camera.height;
             this.view = 0;
         }
     };
-
 };
 
 BasicGame.Game.prototype = {
@@ -174,7 +223,9 @@ BasicGame.Game.prototype = {
         this.world.resize(this.camera.width * 3, this.camera.height * 3);
         this.camera.setPosition((this.world.width - this.camera.width) / 2, this.world.height - this.camera.height);
         terminal = new Terminal(this);
-        network = new Network([3, 4, 2], this);
+        this.network = new Network([3, 4, 2], this);
+
+        console.log(this.network);
 
         tabKey = this.input.keyboard.addKey(Phaser.Keyboard.TAB);
         tabKey.onDown.add(this.switch, this);
@@ -254,7 +305,6 @@ BasicGame.Game.prototype = {
     }, 
 
     render: function() {
-        network.render(this);
         this.game.debug.cameraInfo(this.camera, 300, 32);
     }
 };
