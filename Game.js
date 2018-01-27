@@ -73,7 +73,9 @@ class Network {
 
         // Create paths
 
-        var graphics = state.add.graphics(0, 0);
+        var camX = state.camera.x;
+        var camY = state.camera.y;
+        var graphics = state.add.graphics(camX, camY);
         
         index = 0;
         for (var i = 0; i < layers.length - 1; ++i) {
@@ -89,16 +91,16 @@ class Network {
 
                         graphics.beginFill(0xff0000);
                         graphics.lineStyle(2, 0xff0000, 1);
-                        graphics.moveTo(node.x, node.y);
-                        graphics.lineTo(child.x, child.y);
+                        graphics.moveTo(node.x - camX, node.y - camY);
+                        graphics.lineTo(child.x - camX, child.y - camY);
                     }
                 }
             }
         }
         graphics.endFill();
-        var camX = state.world.width / 2;
-        var camY = state.world.height - 1.5 * (state.camera.height - 64);
-        var sprite = state.add.sprite(camX, camY, graphics.generateTexture());
+        var spriteX = state.world.width / 2;
+        var spriteY = state.world.height - 1.5 * (state.camera.height - 64);
+        var sprite = state.add.sprite(spriteX, spriteY, graphics.generateTexture());
         sprite.anchor.setTo(0.5, 0.5);
         graphics.destroy();
 
