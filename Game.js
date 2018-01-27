@@ -12,7 +12,16 @@ class Node {
         this.idText = state.add.text(x, y, id, { font: '15px Arial', fill: '#ffffff' });
         this.children = {};
         this.activePath = null;
+        this.isTrap = false;
         this.state = state;
+
+        this.trap = function() {
+            this.isTrap = true;
+        }
+
+        this.free = function() {
+            this.isTrap = false;
+        }
 
         this.selectChild = function(id) {
             if (id in this.children) {
@@ -38,6 +47,8 @@ class Network {
      * integer[] layers: Amount of nodes per layers
      */
     constructor(layers, state) {
+        this.MAX_TRAP_COUNT = 2;
+        this.trapCount = 0;
         this.nodes = {};
         this.alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
 
@@ -113,6 +124,21 @@ class Network {
                 return false;
             }
         }
+
+        this.trap = function(nodeId) {
+            var node = this.nodes[nodeId];
+            if (this.trapCount === this.MAX_TRAP_COUNT) {
+                return false;
+            }
+
+            if (node !== undefined) {
+                this.trapCount++;
+                node.trap();
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 }
 
@@ -139,6 +165,12 @@ class Terminal {
                 this.buffer.setText('');
             } else if (cmd[0] === 'print' && cmd.length > 1) {
                 this.buffer.setText(this.buffer.text + '\n' + cmd[1]);
+            } else if (cmd[0] === 'trap' && cmd.length > 1) {
+                if (this.state.network.trap(cmd[1])) {
+                    this.buffer.setText(this.buffer.text + '\n' + 'Successfully trapped node ' + cmd[1]);
+                } else {
+                    this.buffer.setText(this.buffer.text + '\n' + 'Cannot trap node ' + cmd[1]);
+                }
             } else if (cmd[0] === 'redirect' && cmd.length > 2) {
                 if (this.state.network.redirect(cmd[1], cmd[2])) {
                     this.buffer.setText(this.buffer.text + '\n' + 'Redirected traffic from ' + cmd[1] + ' to ' + cmd[2]);
