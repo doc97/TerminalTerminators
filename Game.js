@@ -1,3 +1,47 @@
+class Terminal {
+    constructor(state) {
+        this.command = state.add.text(16, state.world.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
+        this.buffer = state.add.text(16, state.world.height - 32, '', { font: '15px Arial', fill: '#ffffff' });
+        this.buffer.anchor.setTo(0, 1);
+
+        state.input.keyboard.addCallbacks(this, null, null, function(ch) { this.command.setText(this.command.text + ch, true); });
+
+        this.enterKey = state.input.keyboard.addKey(Phaser.Keyboard.ENTER);
+        this.enterKey.onDown.add(function() {
+            var cmdStr = this.command.text.substring(2, this.command.text.length);
+            var cmd = cmdStr.split(' ');
+
+            this.command.setText('$ ', true);
+
+            if (cmd[0] === 'clear') {
+                this.buffer.setText('');
+            } else if (cmd[0] === 'print' && cmd.length > 1) {
+                this.buffer.setText(this.buffer.text + '\n' + cmd[1]);
+            } else {
+                this.command.setText('$ ', true);
+                this.buffer.setText(this.buffer.text + '\n' + cmd + ': command not found');
+            }
+        }, this);
+
+        this.backspaceKey = state.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE);
+        this.backspaceKey.onDown.add(function() {
+            if (this.command.text.length > 2) {
+                this.command.setText(this.command.text.substring(0, this.command.text.length - 1));
+            }
+        }, this);
+
+        this.destroy = function() {
+            this.command.kill();
+            this.buffer.kill();
+            this.enterKey.kill();
+            this.backspaceKey.kill();
+        };
+    }
+}
+
+
+
+/* Game code */
 var content = [
     "The sky above the port was the color of television, tuned to a dead channel.",
     "`It's not like I'm using,' Case heard someone say, as he shouldered his way ",
@@ -52,60 +96,8 @@ BasicGame.Game = function (game) {
     this.physics;   //  the physics manager (Phaser.Physics)
     this.rnd;       //  the repeatable random number generator (Phaser.RandomDataGenerator)
 
-    this.enterKey;
-    this.backspaceKey;
-
     //  You can use any of these from any function within this State.
     //  But do consider them as being 'reserved words', i.e. don't create a property for your own game called "world" or you'll over-write the world reference.
-    this.nextLine = function() {
-        if (lineIndex === content.length) {
-            //  We're finished
-            return;
-        }
-
-        //  Split the current line on spaces, so one word per array element
-        line = content[lineIndex].split(' ');
-        
-        //  Reset the word index to zero (the first word in the line)
-        wordIndex = 0;
-        
-        //  Call the 'nextWord' function once for each word in the line (line.length)
-        this.time.events.repeat(wordDelay, line.length, this.nextWord, this);
-        
-        //  Advance to the next line
-        lineIndex++;
-    }
-            
-    this.nextWord = function() {
-        //  Add the next word onto the text string, followed by a space
-        text.text = text.text.concat(line[wordIndex] + " ");
-        
-        //  Advance the word index to the next word in the line
-        wordIndex++;
-        
-        //  Last word?
-        if (wordIndex === line.length) {
-            //  Add a carriage return
-            text.text = text.text.concat("\n");
-            
-            //  Get the next line after the lineDelay amount of ms has elapsed
-            this.time.events.add(lineDelay, this.nextLine, this);
-        }
-    }
-
-    this.keyPress = function(char) {
-        command.setText(command.text + char, true);
-    }
-
-    this.enterCmd = function() {
-        command.setText('$ ', true);
-    }
-    
-    this.deleteChar = function() {
-        if (command.text.length > 2) {
-            command.setText(command.text.substring(0, command.text.length - 1));
-        }
-    }
 };
 
 BasicGame.Game.prototype = {
@@ -113,27 +105,24 @@ BasicGame.Game.prototype = {
     create: function () {
         // Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
         //text = this.add.text(32, 32, '', { font: "15px Arial", fill: "#19de65" });
-        command = this.add.text(16, this.world.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
-
-        this.input.keyboard.addCallbacks(this, null, null, this.keyPress);
-        this.enterKey = this.input.keyboard.addKey(Phaser.Keyboard.ENTER);
-        this.enterKey.onDown.add(this.enterCmd, this);
-        this.backspaceKey = this.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE);
+        terminal = new Terminal(this);
+        //this.nextLine();
     },
 
     update: function () {
         //  Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
-        if (this.backspaceKey.isDown)
-            this.deleteChar();
     },
 
     quitGame: function (pointer) {
 
         //  Here you should destroy anything you no longer need.
         //  Stop music, delete sprites, purge caches, free resources, all that good stuff.
+        terminal.destroy();
 
         //  Then let's go back to the main menu.
         this.state.start('MainMenu');
 
     }
 };
+
+
