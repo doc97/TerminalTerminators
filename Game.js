@@ -124,7 +124,7 @@ BasicGame.Game.prototype = {
 		 */
 
         // Create a label to use as a button
-        pauseButton = this.add.button(this.world.width/2, this.world.height/2, 'pauseButton', function(str) {
+        pauseButton = this.add.button(this.world.width - 70, 40, 'pauseButton', function(str) {
 	    	// When the pause button is pressed, we pause the game
 	        this.paused = true;
 	
@@ -135,7 +135,7 @@ BasicGame.Game.prototype = {
 	        // And a label to illustrate which menu item was chosen. (This is
 			// not
 			// necessary)
-	        choiseLabel = this.add.text(this.world.width/2, 30, 'Click outside menu to continue', { font: '30px Arial', fill: '#ffffff' });
+	        choiseLabel = this.add.text(this.world.width/2, 30, 'Click outside to continue', { font: '30px Arial', fill: '#ffffff' });
 	        choiseLabel.anchor.setTo(0.5, 0.5);
 	    }, this);
         pauseButton.anchor.setTo(0.5, 0.5);
@@ -161,12 +161,12 @@ BasicGame.Game.prototype = {
 	                // Get menu local coordinates for the click
 	                var x = event.x - x1,
 	                    y = event.y - y1;
-	
+	               
 	                // Calculate the choice
-	                var choise = Math.floor(x / 90) + 3*Math.floor(y / 90);
-	
+	                var choise = Math.floor(x / (menu.width/2)) + 2*Math.floor(y / (menu.height/2));
+	                
 	                // Display the choice
-	                choiseLabel.text = 'You chose menu item: ' + choisemap[choise];
+	                choiseLabel.text = 'You press: ' + choisemap[choise];
 	            }
 	            else{
 	                // Remove the menu and the label

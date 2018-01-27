@@ -17,7 +17,8 @@ BasicGame.Preloader.prototype = {
 		// swap them for your own.
 		// + lots of other required assets here
 		this.load.image('playButton', 'assets/play-btn.png');
-		this.load.image('menu', 'assets/play-btn.png');
+		this.load.image('menu', 'assets/pause-menu.png');
+		this.load.image('pauseButton', 'assets/pause-btn.png');
 	},
 
 	create : function() {
