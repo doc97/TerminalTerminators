@@ -237,67 +237,66 @@ BasicGame.Game.prototype = {
 
         // Create a label to use as a button
         pauseButton = this.add.button(this.camera.width - 70, 40, 'pauseButton', function(str) {
-	    	// When the pause button is pressed, we pause the game
-	        this.paused = true;
-	
-	        // Then add the menu
-	        menu = this.add.sprite(this.camera.width/2, this.camera.height/2, 'menu');
-	        menu.anchor.setTo(0.5, 0.5);
-                menu.fixedToCamera = true;
-	
-	        // And a label to illustrate which menu item was chosen. (This is not necessary)
-	        choiseLabel = this.add.text(this.camera.width/2, 30, 'Click outside to continue', { font: '30px Arial', fill: '#ffffff' });
-	        choiseLabel.anchor.setTo(0.5, 0.5);
-                choiseLabel.fixedToCamera = true;
-	    }, this);
+            // When the pause button is pressed, we pause the game
+            this.paused = true;
+    
+            // Then add the menu
+            menu = this.add.sprite(this.camera.width/2, this.camera.height/2, 'menu');
+            menu.anchor.setTo(0.5, 0.5);
+            menu.fixedToCamera = true;
+    
+            // And a label to illustrate which menu item was chosen. (This is not necessary)
+            choiseLabel = this.add.text(this.camera.width/2, 30, 'Click outside to continue', { font: '30px Arial', fill: '#ffffff' });
+            choiseLabel.anchor.setTo(0.5, 0.5);
+            choiseLabel.fixedToCamera = true;
+        }, this);
         pauseButton.anchor.setTo(0.5, 0.5);
         pauseButton.fixedToCamera = true;
 	
-	    // Add a input listener that can help us return from being paused
-	    this.input.onDown.add(unpause, this);
-	
-	    // And finally the method that handels the pause menu
-	    function unpause(event){
-	        // Only act if paused
-	        if(this.paused){
-	            // Calculate the corners of the menu
-	            var x1 = this.camera.width/2 - menu.width/2 , x2 = this.camera.width/2 + menu.width/2,
-	                y1 = this.camera.height/2 - menu.height/2, y2 = this.camera.height/2 + menu.height/2;
-	
-	            // Check if the click was inside the menu
-	            if(event.x > x1 && event.x < x2 && event.y > y1 && event.y < y2 ){
-	                // The choicemap is an array that will help us see which item was clicked
-	                var choisemap = ['one', 'two', 'three', 'four'];
-	
-	                // Get menu local coordinates for the click
-	                var x = event.x - x1,
-	                    y = event.y - y1;
-	               
-	                // Calculate the choice
-	                var choise = Math.floor(x / (menu.width/2)) + 2*Math.floor(y / (menu.height/2));
-	                
-	                // Display the choice
-	                // choiseLabel.text = 'You press: ' + choisemap[choise];
-	                switch (choise){
-	                case 0:
-	                	this.state.start('MainMenu');
-	                	break;
-	                case 1:
-	                	settings = this.add.sprite(this.camera.width/2, this.camera.height/2, 'settings');
-	        	        settings.anchor.setTo(0.5, 0.5);
-                                settings.fixedToCamera = true;
-	                }
-	            }
-	            else{
-	                // Remove the menu and the label
-	                menu.destroy();
-	                choiseLabel.destroy();
-	
-	                // Unpause the game
-	                this.paused = false;
-	            }
-	        }
-	    }
+        // Add a input listener that can help us return from being paused
+        this.input.onDown.add(unpause, this);
+    
+        // And finally the method that handels the pause menu
+        function unpause(event){
+            // Only act if paused
+            if(this.paused){
+                // Calculate the corners of the menu
+                var x1 = this.camera.width/2 - menu.width/2 , x2 = this.camera.width/2 + menu.width/2,
+                    y1 = this.camera.height/2 - menu.height/2, y2 = this.camera.height/2 + menu.height/2;
+    
+                // Check if the click was inside the menu
+                if(event.x > x1 && event.x < x2 && event.y > y1 && event.y < y2 ){
+                    // The choicemap is an array that will help us see which item was clicked
+                    var choisemap = ['one', 'two', 'three', 'four'];
+    
+                    // Get menu local coordinates for the click
+                    var x = event.x - x1,
+                        y = event.y - y1;
+                   
+                    // Calculate the choice
+                    var choise = Math.floor(x / (menu.width/2)) + 2*Math.floor(y / (menu.height/2));
+                    
+                    // Display the choice
+                    // choiseLabel.text = 'You press: ' + choisemap[choise];
+                    switch (choise){
+                    case 0:
+                            this.state.start('MainMenu');
+                            break;
+                    case 1:
+                            settings = this.add.sprite(this.camera.width/2, this.camera.height/2, 'settings');
+                            settings.anchor.setTo(0.5, 0.5);
+                            settings.fixedToCamera = true;
+                    }
+                } else{
+                    // Remove the menu and the label
+                    menu.destroy();
+                    choiseLabel.destroy();
+    
+                    // Unpause the game
+                    this.paused = false;
+                }
+            }
+        }
     },
 
     update: function () {
