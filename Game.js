@@ -1,3 +1,92 @@
+class Virus {
+    /*
+     * string name: The name and 'id' of the virus
+     * Node spawnNode: The node the virus spawns at
+     * Network network: Reference to the Network
+     * Phaser.State state: Use 'this'
+     */
+    constructor(name, spawnNode, network, state) {
+        this.name = name;
+        this.network = network;
+        this.x = spawnNode.x;
+        this.y = spawnNode.y;
+        this.src = spawnNode;
+        this.dest = spawnNode.activePath;
+        this.distX = this.dest.x - this.src.x;
+        this.distY = this.dest.y - this.src.y;
+        this.progressSpeed = 0.1;
+        this.progress = 0;
+
+        this.sprite = state.add.sprite(this.x, this.y, 'virus');
+        this.sprite.anchor.setTo(0.5, 0.5);
+
+        this.step = function() {
+            this.progress += this.progressSpeed;
+            if (this.progress > 1) {
+                if (this.dest.activePath != null) {
+                    this.progress = 0;
+                    this.src = this.dest;
+                    this.dest = this.src.activePath;
+                    this.distX = this.dest.x - this.src.x;
+                    this.distY = this.dest.y - this.src.y;
+                } else {
+                    this.progress = 1;
+                    this.kill();
+                    return;
+                }
+            }
+
+            this.x = this.src.x + this.distX * this.progress;
+            this.y = this.src.y + this.distY * this.progress;
+            this.sprite.x = this.x;
+            this.sprite.y = this.y;
+        }
+
+        this.kill = function() {
+            delete this.network.viruses[name];
+            this.sprite.kill();
+        }
+
+        // Start spawn sequence
+        state.time.events.loop(Phaser.Timer.SECOND, this.step, this);
+    }
+}
+
+class Attacker {
+    /*
+     * Network network: Reference to the Network 
+     * Phaser.State state: Use 'this'
+     */
+    constructor(network, state) {
+        this.network = network;
+        this.state = state;
+        this.virusNames = ['dolfin.exe'];
+        this.spawnDelaySec = 10;
+        this.spawnCount = 0; 
+
+        this.spawn = function() {
+            console.log('Spawn.exe');
+            var nameIndex = this.state.rnd.between(0, this.virusNames.length);
+            var nodeIndex = this.state.rnd.between(0, this.network.spawnNodeCount - 1);
+            var spawnNode = this.network.nodeAt(nodeIndex);
+            var name = this.virusNames[nameIndex];
+            this.network.viruses[name] = new Virus(name, spawnNode, this.network, this.state);
+            this.state.time.events.add(this.spawnDelaySec * Phaser.Timer.SECOND, this.spawn, this);
+
+            this.spawnCount++;
+            if (this.spawnCount >= 5) {
+                this.spawnCount = 0;
+                this.spawnDelaySec--;
+            }
+        };
+
+        this.start = function() {
+            this.state.time.events.add(Phaser.Timer.SECOND, this.spawn, this);
+            console.log('Start attack');
+        }
+    }
+}
+
 class Node {
     /* 
      * integer x: X-position in world coordinates
@@ -45,27 +134,34 @@ class Node {
 class Network {
     /*
      * integer[] layers: Amount of nodes per layers
+     * Phaser.State state: Use 'this'
      */
     constructor(layers, state) {
         this.MAX_TRAP_COUNT = 2;
         this.trapCount = 0;
+        this.spawnNodeCount = layers[0];
+        this.viruses = {};
         this.nodes = {};
         this.alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
 
-        var nodeDistanceX = 64;
-        var nodeDistanceY = 96;
+        var nodeDistanceX = 128;
+        var nodeDistanceY = 192;
 
         // Create nodes
         var index = 0;
+        var offsetY = 0.0;
+        if (layers.length % 2 == 0)
+            offsetY = -0.5;
+
         for (var i = 0; i < layers.length; ++i) {
             var nodeCount = layers[i];
             for (var j = 0; j < nodeCount; ++j, ++index) {
-                var offset = 0.0;
+                var offsetX = 0.0;
                 if (nodeCount % 2 == 0)
-                    offset = -0.5;
+                    offsetX = -0.5;
 
-                var x = state.world.width / 2 - (nodeDistanceX * (offset + Math.floor(nodeCount / 2))) + j * nodeDistanceX;
-                var y = state.world.height / 2 + i * nodeDistanceY;
+                var x = state.world.width / 2 - (nodeDistanceX * (offsetX + Math.floor(nodeCount / 2))) + j * nodeDistanceX;
+                var y = state.camY1 + state.camera.height / 2 - (nodeDistanceY * (offsetY + Math.floor(layers.length / 2))) + i * nodeDistanceY;
                 var id = this.alphabet[index];
                 this.nodes[id] = new Node(x, y, id, state);
             }
@@ -99,7 +195,7 @@ class Network {
         }
         graphics.endFill();
         var spriteX = state.world.width / 2;
-        var spriteY = state.world.height - 1.5 * (state.camera.height - 64);
+        var spriteY = state.camY1 + state.camera.height / 2;
         var sprite = state.add.sprite(spriteX, spriteY, graphics.generateTexture());
         sprite.anchor.setTo(0.5, 0.5);
         graphics.destroy();
@@ -114,6 +210,10 @@ class Network {
                 var childIndex = index - j + nodeCount + childOffset;
                 this.nodes[this.alphabet[index]].selectChild(this.alphabet[childIndex]);
             }
+        }
+
+        this.nodeAt = function(index) {
+            return this.nodes[this.alphabet[index]];
         }
 
         this.redirect = function(aId, bId) {
@@ -238,10 +338,10 @@ BasicGame.Game = function (game) {
     this.view = 0; // 0 = terminal, 1 = map
     this.switch = function() {
         if (this.view == 0) {
-            this.camera.y = this.world.height - 2 * (this.camera.height - 32);
+            this.camera.y = this.camY1;
             this.view = 1;
         } else {
-            this.camera.y = this.world.height - this.camera.height;
+            this.camera.y = this.camY0;
             this.view = 0;
         }
     };
@@ -256,8 +356,13 @@ BasicGame.Game.prototype = {
         this.camera.setSize(640, 480);
         this.world.resize(this.camera.width * 3, this.camera.height * 3);
         this.camera.setPosition((this.world.width - this.camera.width) / 2, this.world.height - this.camera.height);
+        this.camY0 = this.world.height - this.camera.height;
+        this.camY1 = this.world.height - 2 * (this.camera.height - 32);
+
         terminal = new Terminal(this);
         this.network = new Network([3, 4, 2], this);
+        attacker = new Attacker(this.network, this);
+        attacker.start();
 
         console.log(this.network);
 
@@ -335,10 +440,6 @@ BasicGame.Game.prototype = {
 
     update: function () {
         // Honestly, just about anything could go here. It's YOUR game after all. Eat your heart out!
-    }, 
-
-    render: function() {
-        this.game.debug.cameraInfo(this.camera, 300, 32);
     }
 };
 

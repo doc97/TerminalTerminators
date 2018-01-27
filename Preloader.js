@@ -20,6 +20,7 @@ BasicGame.Preloader.prototype = {
 		this.load.image('menu', 'assets/pause-menu.png');
 		this.load.image('pauseButton', 'assets/pause-btn.png');
 		this.load.image('settings', 'assets/settings-menu.png');
+                this.load.image('virus', 'assets/virus.png');
 	},
 
 	create : function() {
