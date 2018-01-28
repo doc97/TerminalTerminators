@@ -12,12 +12,13 @@ BasicGame.MainMenu.prototype = {
         bg.scale.setTo(0.75, 0.75);
         bg.fixedToCamera = true;
 
-        playButton = this.add.button(this.camera.x + this.camera.width/2, this.camera.y + this.camera.height/2, 'playButton', function(){this.state.start('Game');this.sound.stopAll()}, this);
+        playButton = this.add.button(this.camera.x + this.camera.width/2, this.camera.y + this.camera.height * 4 / 7, 'playButton', function(){this.state.start('Game');this.sound.stopAll()}, this);
+        playButton.scale.setTo(0.5, 0.5);
         playButton.anchor.setTo(0.5, 0.5);
         playButton.fixedToCamera = true;
         
         
-        muteButton = this.add.button(this.camera.x + this.camera.width/2, this.camera.y + this.camera.height*(2/3), 'mute-audio', function(){
+        muteButton = this.add.button(this.camera.x + this.camera.width - 40, this.camera.y + 40, 'mute-audio', function(){
             if (this.sound.mute === false){
                 this.sound.pauseAll();
                 this.sound.mute = true;
@@ -26,7 +27,8 @@ BasicGame.MainMenu.prototype = {
                 this.sound.mute = false;
             }
         }, this);
-        muteButton.anchor.setTo(0.5, 0.5);
+        muteButton.scale.setTo(0.5, 0.5);
+        muteButton.anchor.setTo(1, 0);
         muteButton.fixedToCamera = true;
     },
     

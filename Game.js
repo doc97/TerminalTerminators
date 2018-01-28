@@ -47,7 +47,7 @@ class Packet {
                     return;
                 } else if (this.dest.activePath == null) {
                     // What happened???
-                    console.log('Fail!');
+                    console.log('Fail! ( you found an easter egg! )');
                     this.destroy();
                     return;
                 } else {
@@ -96,8 +96,8 @@ class Attacker {
             var goalNode = this.network.nodeAt(goalIndex);
             var id = this.network.nextId();
             var virusPercentage = this.state.rnd.between(1, 100);
-            if (virusPercentage < 95)
-                this.network.packets.push(new Packet(id, spawnNode, goalNode, 'virus', this.network, this.state));
+            if (virusPercentage < 15)
+                this.network.packets.push(new Packet(id, spawnNode, this.network.nodeAt(this.network.nodeCoutn - 1), 'virus', this.network, this.state));
             else
                 this.network.packets.push(new Packet(id, spawnNode, goalNode, 'packet', this.network, this.state));
 
@@ -112,7 +112,6 @@ class Attacker {
 
         this.start = function() {
             this.state.time.events.add(Phaser.Timer.SECOND, this.spawn, this);
-            console.log('Start attack');
         }
     }
 }
@@ -157,9 +156,6 @@ class Node {
         this.selectChild = function(id) {
             if (id in this.children) {
                 this.activePath = this.children[id];
-                console.log(this.id + ' redirecting to ' + id);
-            } else {
-                console.log(this.id + ' -!>' + id);
             }
         }
 
@@ -175,7 +171,6 @@ class Node {
 
 class Network {
     /*
-	 * <<<<<<< HEAD integer[] layers: Amount of nodes per layers
 	 * Phaser.State state: Use 'this'
 	 */
 
@@ -206,7 +201,7 @@ class Network {
                     offsetX = -0.5;
 
                 var x = state.world.width / 2 - (nodeDistanceX * (offsetX + Math.floor(count / 2))) + j * nodeDistanceX;
-                var y = state.camY1 + state.camera.height / 2 - (nodeDistanceY * (offsetY + Math.floor(layers.length / 2))) + i * nodeDistanceY;
+                var y = state.camY1 + state.camera.height / 2 - 100 - (nodeDistanceY * (offsetY + Math.floor(layers.length / 2))) + i * nodeDistanceY;
                 var id = this.alphabet[index];
 
                 if (i < layers.length - 1) {
@@ -248,7 +243,7 @@ class Network {
         }
         graphics.endFill();
         var spriteX = state.world.width / 2;
-        var spriteY = state.camY1 + state.camera.height / 2;
+        var spriteY = state.camY1 + state.camera.height / 2 - 100;
         var sprite = state.layer0.create(spriteX, spriteY, graphics.generateTexture());
         sprite.anchor.setTo(0.5, 0.5);
         graphics.destroy();
@@ -272,7 +267,7 @@ class Network {
 
         this.nodeAt = function(index) {
             return this.nodes[this.alphabet[index]];
-        }
+        };
 
         this.redirect = function(aId, bId) {
             var nodeA = this.nodes[aId];
@@ -285,11 +280,10 @@ class Network {
                 return true;
             } else {
                 return false;
-       }
-   }
-
-
-
+            }
+        };
+    }
+}
 
 
 class Terminal {
@@ -301,8 +295,8 @@ class Terminal {
         this.cmdStack = [];
         this.stackIndex = 0;
         this.curCmd = '$ ';
-        this.command = state.add.text(state.camera.x + state.camera.width * 0.26, state.camera.y + state.camera.height * 3 / 5, '$ ', { font: '25px Monokai', fill: '#ffffff' });
-        this.buffer = state.add.text(state.camera.x + state.camera.width * 0.26, state.camera.y + state.camera.height * 3 / 5, '', { font: '25px Monokai', fill: '#ffffff' });
+        this.command = state.add.text(state.camera.x + state.camera.width * 0.26, state.camera.y + state.camera.height * 3 / 5, '$ ', { font: '25px Monokai', fill: '#00ffa0' });
+        this.buffer = state.add.text(state.camera.x + state.camera.width * 0.26, state.camera.y + state.camera.height * 3 / 5, '', { font: '25px Monokai', fill: '#00ffa0' });
         this.buffer.anchor.setTo(0, 1);
         this.bufferLines = 0;
 
@@ -338,6 +332,10 @@ class Terminal {
                     this.buffer.setText(this.buffer.text + '\n' + 'No node with id ' + node.id + '!');
                 }
                 this.bufferLines++;
+            } else if (cmd[0] === 'help') {
+                this.state.showHelp();
+                this.buffer.setText(this.buffer.text + '\n' + 'Showing help');
+                this.bufferLines++;
             } else {
                 this.command.setText('$ ', true);
                 this.buffer.setText(this.buffer.text + '\n' + cmdStr + ': command not found');
@@ -353,7 +351,6 @@ class Terminal {
             if (this.bufferLines > 21) {
                 this.bufferLines = 22;
                 var indexOfNewline = this.buffer.text.substring(1).indexOf('\n');
-                console.log(indexOfNewline);
                 var bufStr = this.buffer.text.substr(indexOfNewline + 1);
                 this.buffer.setText(bufStr);
             }
@@ -402,11 +399,10 @@ class Terminal {
 class PauseMenu {
     constructor(state) {
         this.create = function() {
-            console.log('Create menu');
             this.state = state;
             this.menu;
             // Create a label to use as a button
-            this.pauseButton = state.add.button(state.camera.width - 70, 40, 'pauseButton', function(str) {
+            this.pauseButton = state.add.button(state.camera.x + state.camera.width - 40, 40, 'pauseButton', function(str) {
                 // When the pause button is pressed, we pause the game
                 this.state.paused = true;
         
@@ -421,7 +417,8 @@ class PauseMenu {
                 this.choiseLabel.anchor.setTo(0.5, 0.5);
                 this.choiseLabel.fixedToCamera = true;
             }, this);
-            this.pauseButton.anchor.setTo(0.5, 0.5);
+            this.pauseButton.anchor.setTo(1, 0);
+            this.pauseButton.scale.setTo(0.25, 0.25);
             this.pauseButton.fixedToCamera = true;
             
         
@@ -430,7 +427,7 @@ class PauseMenu {
                 // Only act if paused
                 if (this.state.paused) {
                     // Calculate the corners of the menu
-                		var x1 = this.state.camera.width / 2 - this.menu.width / 2 , x2 = this.state.camera.width / 2 + this.menu.width / 2;
+                        var x1 = this.state.camera.width / 2 - this.menu.width / 2 , x2 = this.state.camera.width / 2 + this.menu.width / 2;
                         var y1 = this.state.camera.height / 2 - this.menu.height / 2, y2 = this.state.camera.height / 2 + this.menu.height / 2;
         
                     // Check if the click was inside the menu
@@ -454,16 +451,16 @@ class PauseMenu {
                                 this.choiseLabel.destroy();
                                 this.state.state.start('MainMenu');
                                 this.state.sound.stopAll();
-        	                	break;
-        	                case 1:
-        	                	if (this.state.sound.mute === false){
-        	                		this.state.sound.pauseAll();
-        	                		this.state.sound.mute = true;
-        	                	} else{
-        	                		this.state.sound.resumeAll();
-        	                		this.state.sound.mute = false;
-        	                	}
-                                
+                                break;
+                            case 1:
+                                if (this.state.sound.mute === false){
+                                    this.state.sound.pauseAll();
+                                    this.state.sound.mute = true;
+                                } else {
+                                    this.state.sound.resumeAll();
+                                    this.state.sound.mute = false;
+                                }
+                                break;
                         }
                     } else {
                         // Remove the menu and the label
@@ -510,6 +507,8 @@ BasicGame.Game = function (game) {
     this.physics;   // the physics manager (Phaser.Physics)
     this.rnd;       // the repeatable random number generator
     this.video;
+    this.help;
+    
     this.paused = false;
     this.network;
     this.view = 0; // 0 = terminal, 1 = map
@@ -527,25 +526,11 @@ BasicGame.Game = function (game) {
 BasicGame.Game.prototype = {
     
     create: function () {
-        // Honestly, just about anything could go here. It's YOUR game after
-		// all. Eat your heart out!
-    	// Music stuff
     	this.sound.play('track1');
     	
-    	
-
-        console.log(this.camera.width + ', ' + this.camera.height);
+        this.camera.setSize(1920, 1080);
         this.world.resize(this.camera.width, this.camera.height * 2);
         this.camera.setPosition(0, this.world.height - this.camera.height);
-
-    	// Camera origin: upper-left
-    	
-    	// var virusIsDead = true;
-    	
-    	
-        this.camera.setSize(640, 480);
-        this.world.resize(this.camera.width * 3, this.camera.height * 3);
-        this.camera.setPosition((this.world.width - this.camera.width) / 2, this.world.height - this.camera.height);
 
         this.camY0 = this.world.height - this.camera.height;
         this.camY1 = this.world.height - 2 * (this.camera.height - 32);
@@ -562,27 +547,29 @@ BasicGame.Game.prototype = {
         attacker = new Attacker(this.network, this);
         attacker.start();
 
-        console.log(this.network);
-
         tabKey = this.input.keyboard.addKey(Phaser.Keyboard.TAB);
         tabKey.onDown.add(this.switch, this);
 
-        
         if (this.pauseMenu == null)
             this.pauseMenu = new PauseMenu(this);
         this.pauseMenu.create();
        
-        anim = this.add.sprite(this.camera.width / 2, this.camera.height / 2, 'press-20');
+        anim = this.add.sprite(this.camera.width / 2, this.camera.height / 2 - 200, 'press-20');
     	anim.animations.add('play');
     	anim.animations.play('play', 10, true);
     	anim.anchor.setTo(0.5, 0.5);
         anim.fixedToCamera = true;
+
+        this.showHelp = function() {
+            this.help = this.add.sprite(this.camera.x + this.camera.width / 2, this.camera.y + this.camera.height / 2, 'help');
+            this.help.anchor.setTo(0.5, 0.5);
+            this.help.inputEnabled = true;
+            this.help.events.onInputDown.add(function() {
+                console.log('Welcome!');
+                this.help.destroy();
+            }, this);
+        };
+
+        this.showHelp();
     }
-}
- }
-        
 }  
-	    
-    
-
-
