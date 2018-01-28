@@ -21,10 +21,11 @@ class Packet {
         this.progress = 0;
         this.stepEvent;
 
-        this.sprite = state.add.sprite(this.x, this.y, 'virus');
+        this.sprite = state.layer2.create(this.x, this.y, 'virus');
         this.sprite.anchor.setTo(0.5, 0.5);
-        this.destText = state.add.text(this.x, this.y, this.goalNode.id, { font: 'Arial 15px', fill: '#000000' });
+        this.destText = new Phaser.Text(state.game, this.x, this.y, this.goalNode.id, { font: 'Arial 15px', fill: '#000000' });
         this.destText.anchor.setTo(0.5, 0.5);
+        state.layer3.add(this.destText);
 
         this.step = function() {
             this.progress += this.progressSpeed;
@@ -110,11 +111,12 @@ class Node {
         this.x = x;
         this.y = y;
         this.id = id;
-        this.idText = state.add.text(x, y, id, { font: '15px Arial', fill: '#ffffff' });
         this.children = {};
         this.activePath = null;
         this.isTrap = false;
         this.state = state;
+        this.idText = new Phaser.Text(state.game, x, y, id, { font: '15px Arial', fill: '#ffffff' });
+        state.layer1.add(this.idText);
 
         this.trap = function() {
             this.isTrap = true;
@@ -212,7 +214,7 @@ class Network {
         graphics.endFill();
         var spriteX = state.world.width / 2;
         var spriteY = state.camY1 + state.camera.height / 2;
-        var sprite = state.add.sprite(spriteX, spriteY, graphics.generateTexture());
+        var sprite = state.layer0.create(spriteX, spriteY, graphics.generateTexture());
         sprite.anchor.setTo(0.5, 0.5);
         graphics.destroy();
 
@@ -509,6 +511,11 @@ BasicGame.Game.prototype = {
         this.camera.setPosition((this.world.width - this.camera.width) / 2, this.world.height - this.camera.height);
         this.camY0 = this.world.height - this.camera.height;
         this.camY1 = this.world.height - 2 * (this.camera.height - 32);
+
+        this.layer0 = this.add.group();
+        this.layer1 = this.add.group();
+        this.layer2 = this.add.group();
+        this.layer3 = this.add.group();
 
         terminal = new Terminal(this);
         this.network = new Network([3, 4, 4, 4], this);
