@@ -74,7 +74,7 @@ class Attacker {
     constructor(network, state) {
         this.network = network;
         this.state = state;
-        this.spawnDelaySec = 10;
+        this.spawnDelaySec = 15.0;
         this.spawnCount = 0; 
 
         this.spawn = function() {
@@ -89,7 +89,7 @@ class Attacker {
             this.spawnCount++;
             if (this.spawnCount >= 5) {
                 this.spawnCount = 0;
-                this.spawnDelaySec--;
+                this.spawnDelaySec *= 0.9;
             }
         };
 
@@ -159,7 +159,7 @@ class Network {
         this.nodes = {};
         this.alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
 
-        var nodeDistanceX = 64;
+        var nodeDistanceX = 128;
         var nodeDistanceY = 96;
 
         // Create nodes
@@ -273,11 +273,17 @@ class Terminal {
 	 */
     constructor(state) {
         this.state = state;
+        this.cmdStack = [];
+        this.stackIndex = 0;
+        this.curCmd = '$ ';
         this.command = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
         this.buffer = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '', { font: '15px Arial', fill: '#ffffff' });
         this.buffer.anchor.setTo(0, 1);
 
-        state.input.keyboard.addCallbacks(this, null, null, function(ch) { this.command.setText(this.command.text + ch, true); });
+        state.input.keyboard.addCallbacks(this, null, null, function(ch) {
+            this.curCmd = this.command.text + ch;
+            this.command.setText(this.curCmd, true);
+        });
 
         this.enterKey = state.input.keyboard.addKey(Phaser.Keyboard.ENTER);
         this.enterKey.onDown.add(function() {
@@ -311,8 +317,14 @@ class Terminal {
                 }
             } else {
                 this.command.setText('$ ', true);
-                this.buffer.setText(this.buffer.text + '\n' + cmd + ': command not found');
+                this.buffer.setText(this.buffer.text + '\n' + cmdStr + ': command not found');
             }
+
+            if (this.cmdStack.length >= 3)
+                this.cmdStack.shift();
+            this.cmdStack.push(cmdStr);
+            this.stackIndex = this.cmdStack.length;
+            this.curCmd = '$ ';
         }, this);
 
         this.backspaceKey = state.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE);
@@ -321,6 +333,29 @@ class Terminal {
                 this.command.setText(this.command.text.substring(0, this.command.text.length - 1));
             }
         }, this);
+
+        this.upKey = state.input.keyboard.addKey(Phaser.Keyboard.UP);
+        this.upKey.onDown.add(function() {
+            this.stackIndex--;
+            if (this.stackIndex < 0)
+                this.stackIndex = 0;
+
+            if (this.stackIndex < this.cmdStack.length && this.stackIndex >= 0)
+                this.command.setText('$ ' + this.cmdStack[this.stackIndex]);
+        }, this);
+
+        this.downKey = state.input.keyboard.addKey(Phaser.Keyboard.DOWN);
+        this.downKey.onDown.add(function() {
+            this.stackIndex++;
+            if (this.stackIndex > this.cmdStack.length)
+                this.stackIndex = this.cmdStack.length;
+
+            if (this.stackIndex < this.cmdStack.length && this.stackIndex >= 0)
+                this.command.setText('$ ' + this.cmdStack[this.stackIndex]);
+            else if (this.stackIndex == this.cmdStack.length)
+                this.command.setText(this.curCmd, true);
+        }, this);
+
 
         this.destroy = function() {
             this.command.destroy();
