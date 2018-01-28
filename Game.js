@@ -69,8 +69,8 @@ class Packet {
 
 class Attacker {
     /*
-	 * Network network: Reference to the Network Phaser.State state: Use 'this'
-	 */
+     * Network network: Reference to the Network Phaser.State state: Use 'this'
+     */
     constructor(network, state) {
         this.network = network;
         this.state = state;
@@ -102,10 +102,10 @@ class Attacker {
 
 class Node {
     /*
-	 * integer x: X-position in world coordinates integer y: Y-position in world
-	 * coordinates string id: The character displayed on the node Phaser.State
-	 * state: Use 'this'
-	 */
+     * integer x: X-position in world coordinates integer y: Y-position in world
+     * coordinates string id: The character displayed on the node Phaser.State
+     * state: Use 'this'
+     */
     constructor(x, y, id, state) {
         this.x = x;
         this.y = y;
@@ -145,9 +145,9 @@ class Node {
 
 class Network {
     /*
-	 * integer[] layers: Amount of nodes per layers Phaser.State state: Use
-	 * 'this'
-	 */
+     * integer[] layers: Amount of nodes per layers Phaser.State state: Use
+     * 'this'
+     */
     constructor(layers, state) {
         this.MAX_TRAP_COUNT = 2;
         this.trapCount = 0;
@@ -269,8 +269,8 @@ class Network {
 
 class Terminal {
     /*
-	 * Phaser.State state: Use 'this'
-	 */
+     * Phaser.State state: Use 'this'
+     */
     constructor(state) {
         this.state = state;
         this.cmdStack = [];

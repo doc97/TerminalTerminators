@@ -20,11 +20,11 @@ BasicGame.Preloader.prototype = {
 		this.load.audio('track2', 'assets/soundtrack/track2.ogg');
 		this.load.audio('track3', 'assets/soundtrack/track3.ogg');
 
-		this.sound.add('track1', 1, true);
-		this.sound.add('track2', 1, true);
-		this.sound.add('track3', 1, true);
-		this.sound.add('modem-remix', 1, true);
-		this.sound.add('jumpy-melody', 1, true);
+		this.sound.add('track1', 1, true); // In-game
+		this.sound.add('track2', 1, true); // Main menu
+		this.sound.add('track3', 1, true); // Game over
+		this.sound.add('modem-remix', 1, true); // Instructions
+		this.sound.add('jumpy-melody', 1, true); // Not used
 	},
 
 	create : function() {
