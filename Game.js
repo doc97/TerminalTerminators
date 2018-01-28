@@ -1,37 +1,49 @@
-class Virus {
+class Packet {
     /*
-	 * string name: The name and 'id' of the virus Node spawnNode: The node the
-	 * virus spawns at Network network: Reference to the Network Phaser.State
-	 * state: Use 'this'
-	 */
-    constructor(name, spawnNode, network, state) {
-        this.name = name;
+     * integer id: Packet id
+     * Node spawnNode: The node the packet spawns at
+     * Node goal: The node the packet is supposed to get to
+     * Network network: Reference to the Network
+     * Phaser.State state: Use 'this'
+     */
+    constructor(id, spawnNode, goalNode, network, state) {
+        this.id = id;
+        this.goalNode = goalNode;
         this.network = network;
+        this.state = state;
         this.x = spawnNode.x;
         this.y = spawnNode.y;
         this.src = spawnNode;
         this.dest = spawnNode.activePath;
         this.distX = this.dest.x - this.src.x;
         this.distY = this.dest.y - this.src.y;
-        this.progressSpeed = 0.1;
+        this.progressSpeed = 0.05;
         this.progress = 0;
+        this.stepEvent;
 
         this.sprite = state.add.sprite(this.x, this.y, 'virus');
         this.sprite.anchor.setTo(0.5, 0.5);
+        this.destText = state.add.text(this.x, this.y, this.goalNode.id, { font: 'Arial 15px', fill: '#000000' });
+        this.destText.anchor.setTo(0.5, 0.5);
 
         this.step = function() {
             this.progress += this.progressSpeed;
-            if (this.progress > 1) {
-                if (this.dest.activePath != null) {
-                    this.progress = 0;
+            if (this.progress >= 1) {
+                if (this.dest === this.goalNode) {
+                    // Success
+                    this.destroy();
+                    return;
+                } else if (this.dest.activePath == null) {
+                    // What happened???
+                    console.log('Fail!');
+                    this.destroy();
+                    return;
+                } else {
+                    this.progress = this.progressSpeed;
                     this.src = this.dest;
                     this.dest = this.src.activePath;
                     this.distX = this.dest.x - this.src.x;
                     this.distY = this.dest.y - this.src.y;
-                } else {
-                    this.progress = 1;
-                    this.destroy();
-                    return;
                 }
             }
 
@@ -39,15 +51,19 @@ class Virus {
             this.y = this.src.y + this.distY * this.progress;
             this.sprite.x = this.x;
             this.sprite.y = this.y;
+            this.destText.x = this.x;
+            this.destText.y = this.y;
         }
 
         this.destroy = function() {
-            delete this.network.viruses[name];
+            delete this.network.packets[id];
             this.sprite.destroy();
+            this.destText.destroy();
+            this.state.time.events.remove(this.stepEvent);
         }
 
         // Start spawn sequence
-        state.time.events.loop(Phaser.Timer.SECOND, this.step, this);
+        this.stepEvent = state.time.events.loop(Phaser.Timer.SECOND, this.step, this);
     }
 }
 
@@ -58,17 +74,16 @@ class Attacker {
     constructor(network, state) {
         this.network = network;
         this.state = state;
-        this.virusNames = ['dolfin.exe'];
         this.spawnDelaySec = 10;
         this.spawnCount = 0; 
 
         this.spawn = function() {
-            console.log('Spawn.exe');
-            var nameIndex = this.state.rnd.between(0, this.virusNames.length);
-            var nodeIndex = this.state.rnd.between(0, this.network.spawnNodeCount - 1);
-            var spawnNode = this.network.nodeAt(nodeIndex);
-            var name = this.virusNames[nameIndex];
-            this.network.viruses[name] = new Virus(name, spawnNode, this.network, this.state);
+            var spawnIndex = this.state.rnd.between(0, this.network.spawnNodeCount - 1);
+            var goalIndex = this.state.rnd.between(this.network.nodeCount - this.network.goalNodeCount, this.network.nodeCount - 1);
+            var spawnNode = this.network.nodeAt(spawnIndex);
+            var goalNode = this.network.nodeAt(goalIndex);
+            var id = this.network.nextId();
+            this.network.packets.push(new Packet(id, spawnNode, goalNode, this.network, this.state));
             this.state.time.events.add(this.spawnDelaySec * Phaser.Timer.SECOND, this.spawn, this);
 
             this.spawnCount++;
@@ -123,7 +138,7 @@ class Node {
         };
 
         this.destroy = function() {
-            this.idText.kill();
+            this.idText.destroy();
         };
     }
 }
@@ -136,13 +151,16 @@ class Network {
     constructor(layers, state) {
         this.MAX_TRAP_COUNT = 2;
         this.trapCount = 0;
+        this.curId = 0;
+        this.nodeCount = 0;
         this.spawnNodeCount = layers[0];
-        this.viruses = {};
+        this.goalNodeCount = layers[layers.length - 1];
+        this.packets = [];
         this.nodes = {};
         this.alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
 
-        var nodeDistanceX = 128;
-        var nodeDistanceY = 192;
+        var nodeDistanceX = 64;
+        var nodeDistanceY = 96;
 
         // Create nodes
         var index = 0;
@@ -151,18 +169,19 @@ class Network {
             offsetY = -0.5;
 
         for (var i = 0; i < layers.length; ++i) {
-            var nodeCount = layers[i];
-            for (var j = 0; j < nodeCount; ++j, ++index) {
+            var count = layers[i];
+            for (var j = 0; j < count; ++j, ++index) {
                 var offsetX = 0.0;
-                if (nodeCount % 2 == 0)
+                if (count % 2 == 0)
                     offsetX = -0.5;
 
-                var x = state.world.width / 2 - (nodeDistanceX * (offsetX + Math.floor(nodeCount / 2))) + j * nodeDistanceX;
+                var x = state.world.width / 2 - (nodeDistanceX * (offsetX + Math.floor(count / 2))) + j * nodeDistanceX;
                 var y = state.camY1 + state.camera.height / 2 - (nodeDistanceY * (offsetY + Math.floor(layers.length / 2))) + i * nodeDistanceY;
                 var id = this.alphabet[index];
                 this.nodes[id] = new Node(x, y, id, state);
             }
         }
+        this.nodeCount = index;
 
         // Create paths
 
@@ -172,10 +191,10 @@ class Network {
         
         index = 0;
         for (var i = 0; i < layers.length - 1; ++i) {
-            var nodeCount = layers[i];
-            for (var j = 0; j < nodeCount; ++j, ++index) {
+            var count = layers[i];
+            for (var j = 0; j < count; ++j, ++index) {
                 for (var k = 0; k < layers[i + 1]; ++k) {
-                    var childIndex = index - j + nodeCount + k;
+                    var childIndex = index - j + count + k;
                     var child = this.nodes[this.alphabet[childIndex]];
                     var node = this.nodes[this.alphabet[index]];
 
@@ -201,13 +220,17 @@ class Network {
         // Select paths
         var index = 0;
         for (var i = 0; i < layers.length - 1; ++i) {
-            var nodeCount = layers[i];
-            for (var j = 0; j < nodeCount; ++j, index++) {
+            var count = layers[i];
+            for (var j = 0; j < count; ++j, index++) {
                 var childOffset = state.rnd.between(0, layers[i + 1]- 1);
-                var childIndex = index - j + nodeCount + childOffset;
+                var childIndex = index - j + count + childOffset;
                 this.nodes[this.alphabet[index]].selectChild(this.alphabet[childIndex]);
             }
         }
+
+        this.nextId = function() {
+            return this.curId++;
+        };
 
         this.nodeAt = function(index) {
             return this.nodes[this.alphabet[index]];
@@ -215,8 +238,11 @@ class Network {
 
         this.redirect = function(aId, bId) {
             var nodeA = this.nodes[aId];
+            if (nodeA == null)
+                return false;
+
             var nodeB = nodeA.children[bId];
-            if (nodeA !== undefined && nodeB !== undefined) {
+            if (nodeA != null && nodeB != null) {
                 nodeA.selectChild(bId);
                 return true;
             } else {
@@ -297,10 +323,10 @@ class Terminal {
         }, this);
 
         this.destroy = function() {
-            this.command.kill();
-            this.buffer.kill();
-            this.enterKey.kill();
-            this.backspaceKey.kill();
+            this.command.destroy();
+            this.buffer.destroy();
+            this.enterKey.destroy();
+            this.backspaceKey.destroy();
         };
     }
 }
@@ -450,7 +476,7 @@ BasicGame.Game.prototype = {
         this.camY1 = this.world.height - 2 * (this.camera.height - 32);
 
         terminal = new Terminal(this);
-        this.network = new Network([3, 4, 2], this);
+        this.network = new Network([3, 4, 4, 4], this);
         attacker = new Attacker(this.network, this);
         attacker.start();
 
@@ -466,5 +492,3 @@ BasicGame.Game.prototype = {
 	    
     }   
 }
-
-
