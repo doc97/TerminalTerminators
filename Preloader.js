@@ -22,8 +22,10 @@ BasicGame.Preloader.prototype = {
 
 		
         //minigame satuff
-        this.load.spritesheet('press-20','assets/minigamepngs/spritesheetb20times.png', 480, 360, -1, 5 ,10)
-        this.load.spritesheet('simonsays3896', 'assets/minigamepngs/spritesheetsimsonsays3896.png', 480, 460, -1)
+        this.load.spritesheet('press-20','assets/minigamepngs/spritesheetb20times.png', 480, 360, -1, 5 , 10);
+        this.load.spritesheet('type-terminate', 'assets/minigamepngs/spritesheettypeterminate.png', 480, 360, -1, 5, 10);
+        this.load.spritesheet('type-150-random', 'assets/minigamepngs/spritesheet150randomch.png', 480, 360, -1, 5, 10);
+        
         
         this.load.audio('modem-remix', 'assets/soundtrack/Theme_modem_remix.ogg');
         this.load.audio('ambient-track', 'assets/soundtrack/bonus_ambient_track.ogg');
