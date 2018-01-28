@@ -1,12 +1,12 @@
 class Packet {
     /*
-     * integer id: Packet id
-     * Node spawnNode: The node the packet spawns at
-     * Node goal: The node the packet is supposed to get to
-     * Network network: Reference to the Network
-     * Phaser.State state: Use 'this'
-     */
+	 * integer id: Packet id Node spawnNode: The node the packet spawns at Node
+	 * goal: The node the packet is supposed to get to Network network:
+	 * Reference to the Network Phaser.State state: Use 'this'
+	 */
     constructor(id, spawnNode, goalNode, type, network, state) {
+
+	
         this.id = id;
         this.goalNode = goalNode;
         this.type = type;
@@ -81,8 +81,8 @@ class Packet {
 
 class Attacker {
     /*
-     * Network network: Reference to the Network Phaser.State state: Use 'this'
-     */
+	 * Network network: Reference to the Network Phaser.State state: Use 'this'
+	 */
     constructor(network, state) {
         this.network = network;
         this.state = state;
@@ -119,13 +119,13 @@ class Attacker {
 
 class Node {
     /*
-     * integer x: X-position in world coordinates
-     * integer y: Y-position in world coordinates
-     * string id: The character displayed on the node Phaser.State
-     * string type: The type of node (base/honeypot/node)
-     * state: Use 'this'
-     */
+	 * <<<<<<< HEAD integer x: X-position in world coordinates integer y:
+	 * Y-position in world coordinates string id: The character displayed on the
+	 * node Phaser.State string type: The type of node (base/honeypot/node)
+	 * state: Use 'this'
+	 */
     constructor(x, y, id, type, state) {
+
         this.x = x;
         this.y = y;
         this.id = id;
@@ -175,9 +175,10 @@ class Node {
 
 class Network {
     /*
-     * integer[] layers: Amount of nodes per layers
-     * Phaser.State state: Use 'this'
-     */
+	 * <<<<<<< HEAD integer[] layers: Amount of nodes per layers
+	 * Phaser.State state: Use 'this'
+	 */
+
     constructor(layers, state) {
         this.MAX_TRAP_COUNT = 2;
         this.curId = 0;
@@ -284,15 +285,17 @@ class Network {
                 return true;
             } else {
                 return false;
-            }
-        }
-    }
-}
+       }
+   }
+
+
+
+
 
 class Terminal {
     /*
-     * Phaser.State state: Use 'this'
-     */
+	 * Phaser.State state: Use 'this'
+	 */
     constructor(state) {
         this.state = state;
         this.cmdStack = [];
@@ -492,12 +495,12 @@ BasicGame.Game = function (game) {
     this.camera;    // a reference to the game camera (Phaser.Camera)
     this.cache;     // the game cache (Phaser.Cache)
     this.input;     // the global input manager. You can access
-					// this.input.keyboard, this.input.mouse, as well from it.
+    				// this.input.keyboard, this.input.mouse, as well from it.
 					// (Phaser.Input)
     this.load;      // for preloading assets (Phaser.Loader)
     this.math;      // lots of useful common math operations (Phaser.Math)
     this.sound;     // the sound manager - add a sound, play one, set-up
-					// markers, etc (Phaser.SoundManager)
+	this.between;				// markers, etc (Phaser.SoundManager)
     this.stage;     // the game stage (Phaser.Stage)
     this.time;      // the clock (Phaser.Time)
     this.tweens;    // the tween manager (Phaser.TweenManager)
@@ -506,7 +509,7 @@ BasicGame.Game = function (game) {
     this.particles; // the particle manager (Phaser.Particles)
     this.physics;   // the physics manager (Phaser.Physics)
     this.rnd;       // the repeatable random number generator
-    
+    this.video;
     this.paused = false;
     this.network;
     this.view = 0; // 0 = terminal, 1 = map
@@ -528,11 +531,22 @@ BasicGame.Game.prototype = {
 		// all. Eat your heart out!
     	// Music stuff
     	this.sound.play('track1');
-    	var mute = false;
     	
+    	
+
         console.log(this.camera.width + ', ' + this.camera.height);
         this.world.resize(this.camera.width, this.camera.height * 2);
         this.camera.setPosition(0, this.world.height - this.camera.height);
+
+    	// Camera origin: upper-left
+    	
+    	// var virusIsDead = true;
+    	
+    	
+        this.camera.setSize(640, 480);
+        this.world.resize(this.camera.width * 3, this.camera.height * 3);
+        this.camera.setPosition((this.world.width - this.camera.width) / 2, this.world.height - this.camera.height);
+
         this.camY0 = this.world.height - this.camera.height;
         this.camY1 = this.world.height - 2 * (this.camera.height - 32);
 
@@ -557,6 +571,18 @@ BasicGame.Game.prototype = {
         if (this.pauseMenu == null)
             this.pauseMenu = new PauseMenu(this);
         this.pauseMenu.create();
-	    
-    }   
+       
+        anim = this.add.sprite(this.camera.width / 2, this.camera.height / 2, 'press-20');
+    	anim.animations.add('play');
+    	anim.animations.play('play', 10, true);
+    	anim.anchor.setTo(0.5, 0.5);
+        anim.fixedToCamera = true;
+    }
 }
+ }
+        
+}  
+	    
+    
+
+
