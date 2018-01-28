@@ -6,9 +6,10 @@ class Packet {
      * Network network: Reference to the Network
      * Phaser.State state: Use 'this'
      */
-    constructor(id, spawnNode, goalNode, network, state) {
+    constructor(id, spawnNode, goalNode, type, network, state) {
         this.id = id;
         this.goalNode = goalNode;
+        this.type = type;
         this.network = network;
         this.state = state;
         this.x = spawnNode.x;
@@ -21,11 +22,21 @@ class Packet {
         this.progress = 0;
         this.stepEvent;
 
-        this.sprite = state.layer2.create(this.x, this.y, 'virus');
-        this.sprite.anchor.setTo(0.5, 0.5);
-        this.destText = new Phaser.Text(state.game, this.x, this.y, this.goalNode.id, { font: 'Arial 15px', fill: '#000000' });
-        this.destText.anchor.setTo(0.5, 0.5);
-        state.layer3.add(this.destText);
+        if (type === 'packet') {
+            this.sprite = state.layer2.create(this.x, this.y, 'packet');
+            this.sprite.scale.setTo(0.25, 0.25);
+            this.sprite.anchor.setTo(0.5, 0.5);
+            this.destText = new Phaser.Text(state.game, this.x, this.y, this.goalNode.id, { font: 'Arial 15px', fill: '#000000' });
+            this.destText.anchor.setTo(0.5, 0.5);
+            state.layer3.add(this.destText);
+        } else {
+            this.sprite = state.layer2.create(this.x, this.y, 'virus');
+            this.sprite.scale.setTo(0.25, 0.25);
+            this.sprite.anchor.setTo(0.5, 0.5);
+            this.destText = new Phaser.Text(state.game, this.x, this.y, '', { font: 'Arial 15px', fill: '#000000' });
+            this.destText.anchor.setTo(0.5, 0.5);
+            state.layer3.add(this.destText);
+        }
 
         this.step = function() {
             this.progress += this.progressSpeed;
@@ -84,7 +95,12 @@ class Attacker {
             var spawnNode = this.network.nodeAt(spawnIndex);
             var goalNode = this.network.nodeAt(goalIndex);
             var id = this.network.nextId();
-            this.network.packets.push(new Packet(id, spawnNode, goalNode, this.network, this.state));
+            var virusPercentage = this.state.rnd.between(1, 100);
+            if (virusPercentage < 95)
+                this.network.packets.push(new Packet(id, spawnNode, goalNode, 'virus', this.network, this.state));
+            else
+                this.network.packets.push(new Packet(id, spawnNode, goalNode, 'packet', this.network, this.state));
+
             this.state.time.events.add(this.spawnDelaySec * Phaser.Timer.SECOND, this.spawn, this);
 
             this.spawnCount++;
@@ -103,27 +119,39 @@ class Attacker {
 
 class Node {
     /*
-     * integer x: X-position in world coordinates integer y: Y-position in world
-     * coordinates string id: The character displayed on the node Phaser.State
+     * integer x: X-position in world coordinates
+     * integer y: Y-position in world coordinates
+     * string id: The character displayed on the node Phaser.State
+     * string type: The type of node (base/honeypot/node)
      * state: Use 'this'
      */
-    constructor(x, y, id, state) {
+    constructor(x, y, id, type, state) {
         this.x = x;
         this.y = y;
         this.id = id;
         this.children = {};
         this.activePath = null;
-        this.isTrap = false;
         this.state = state;
-        this.idText = new Phaser.Text(state.game, x, y, id, { font: '15px Arial', fill: '#ffffff' });
-        state.layer1.add(this.idText);
-
-        this.trap = function() {
-            this.isTrap = true;
-        }
-
-        this.free = function() {
-            this.isTrap = false;
+        
+        switch (type) {
+            case 'base' :
+                var sprite = this.state.layer1.create(x, y, 'base-three');
+                sprite.scale.setTo(0.5, 0.5);
+                sprite.anchor.setTo(0.5, 0.5);
+                this.idText = new Phaser.Text(state.game, x, y, id, { font: '25px Arial', fill: '#ffffff' });
+                this.idText.anchor.setTo(0.5, 0.5)
+                state.layer1.add(this.idText);
+                break;
+            case 'honeypot' :
+                this.idText = new Phaser.Text(state.game, x, y, id + ' ( H )', { font: '25px Arial', fill: '#ffffff' });
+                this.idText.anchor.setTo(0.5, 0.5)
+                state.layer1.add(this.idText);
+                break;
+            case 'node' :
+                this.idText = new Phaser.Text(state.game, x, y, id, { font: '25px Arial', fill: '#ffffff' });
+                this.idText.anchor.setTo(0.5, 0.5)
+                state.layer1.add(this.idText);
+                break;
         }
 
         this.selectChild = function(id) {
@@ -147,12 +175,11 @@ class Node {
 
 class Network {
     /*
-     * integer[] layers: Amount of nodes per layers Phaser.State state: Use
-     * 'this'
+     * integer[] layers: Amount of nodes per layers
+     * Phaser.State state: Use 'this'
      */
     constructor(layers, state) {
         this.MAX_TRAP_COUNT = 2;
-        this.trapCount = 0;
         this.curId = 0;
         this.nodeCount = 0;
         this.spawnNodeCount = layers[0];
@@ -161,8 +188,8 @@ class Network {
         this.nodes = {};
         this.alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
 
-        var nodeDistanceX = 128;
-        var nodeDistanceY = 96;
+        var nodeDistanceX = 3 * 128;
+        var nodeDistanceY = 2 * 96;
 
         // Create nodes
         var index = 0;
@@ -180,7 +207,14 @@ class Network {
                 var x = state.world.width / 2 - (nodeDistanceX * (offsetX + Math.floor(count / 2))) + j * nodeDistanceX;
                 var y = state.camY1 + state.camera.height / 2 - (nodeDistanceY * (offsetY + Math.floor(layers.length / 2))) + i * nodeDistanceY;
                 var id = this.alphabet[index];
-                this.nodes[id] = new Node(x, y, id, state);
+
+                if (i < layers.length - 1) {
+                    this.nodes[id] = new Node(x, y, id, 'node', state);
+                } else if (j == count - 1) {
+                    this.nodes[id] = new Node(x, y, id, 'honeypot', state);
+                } else {
+                    this.nodes[id] = new Node(x, y, id, 'base', state);
+                }
             }
         }
         this.nodeCount = index;
@@ -220,6 +254,7 @@ class Network {
 
 
         // Select paths
+        
         var index = 0;
         for (var i = 0; i < layers.length - 1; ++i) {
             var count = layers[i];
@@ -251,21 +286,6 @@ class Network {
                 return false;
             }
         }
-
-        this.trap = function(nodeId) {
-            var node = this.nodes[nodeId];
-            if (this.trapCount === this.MAX_TRAP_COUNT) {
-                return false;
-            }
-
-            if (node !== undefined) {
-                this.trapCount++;
-                node.trap();
-                return true;
-            } else {
-                return false;
-            }
-        }
     }
 }
 
@@ -278,9 +298,10 @@ class Terminal {
         this.cmdStack = [];
         this.stackIndex = 0;
         this.curCmd = '$ ';
-        this.command = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '$ ', { font: '15px Arial', fill: '#ffffff' });
-        this.buffer = state.add.text(state.camera.x + 16, state.camera.y + state.camera.height - 32, '', { font: '15px Arial', fill: '#ffffff' });
+        this.command = state.add.text(state.camera.x + state.camera.width * 0.26, state.camera.y + state.camera.height * 3 / 5, '$ ', { font: '25px Monokai', fill: '#ffffff' });
+        this.buffer = state.add.text(state.camera.x + state.camera.width * 0.26, state.camera.y + state.camera.height * 3 / 5, '', { font: '25px Monokai', fill: '#ffffff' });
         this.buffer.anchor.setTo(0, 1);
+        this.bufferLines = 0;
 
         state.input.keyboard.addCallbacks(this, null, null, function(ch) {
             this.curCmd = this.command.text + ch;
@@ -298,18 +319,14 @@ class Terminal {
                 this.buffer.setText('');
             } else if (cmd[0] === 'print' && cmd.length > 1) {
                 this.buffer.setText(this.buffer.text + '\n' + cmd[1]);
-            } else if (cmd[0] === 'trap' && cmd.length > 1) {
-                if (this.state.network.trap(cmd[1])) {
-                    this.buffer.setText(this.buffer.text + '\n' + 'Successfully trapped node ' + cmd[1]);
-                } else {
-                    this.buffer.setText(this.buffer.text + '\n' + 'Cannot trap node ' + cmd[1]);
-                }
+                this.bufferLines++;
             } else if (cmd[0] === 'redirect' && cmd.length > 2) {
                 if (this.state.network.redirect(cmd[1], cmd[2])) {
                     this.buffer.setText(this.buffer.text + '\n' + 'Redirected traffic from ' + cmd[1] + ' to ' + cmd[2]);
                 } else {
                     this.buffer.setText(this.buffer.text + '\n' + 'Cannot redirect traffic from ' + cmd[1] + ' to ' + cmd[2]);
                 }
+                this.bufferLines++;
             } else if (cmd[0] === 'path' && cmd.length > 1) {
                 var node = this.state.network.nodes[cmd[1]];
                 if (node !== undefined) {
@@ -317,9 +334,11 @@ class Terminal {
                 } else {
                     this.buffer.setText(this.buffer.text + '\n' + 'No node with id ' + node.id + '!');
                 }
+                this.bufferLines++;
             } else {
                 this.command.setText('$ ', true);
                 this.buffer.setText(this.buffer.text + '\n' + cmdStr + ': command not found');
+                this.bufferLines++;
             }
 
             if (this.cmdStack.length >= 3)
@@ -327,6 +346,14 @@ class Terminal {
             this.cmdStack.push(cmdStr);
             this.stackIndex = this.cmdStack.length;
             this.curCmd = '$ ';
+
+            if (this.bufferLines > 21) {
+                this.bufferLines = 22;
+                var indexOfNewline = this.buffer.text.substring(1).indexOf('\n');
+                console.log(indexOfNewline);
+                var bufStr = this.buffer.text.substr(indexOfNewline + 1);
+                this.buffer.setText(bufStr);
+            }
         }, this);
 
         this.backspaceKey = state.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE);
@@ -503,19 +530,18 @@ BasicGame.Game.prototype = {
     	this.sound.play('track1');
     	var mute = false;
     	
-    	// Camera origin: upper-left
-    	
-    	
-        this.camera.setSize(640, 480);
-        this.world.resize(this.camera.width * 3, this.camera.height * 3);
-        this.camera.setPosition((this.world.width - this.camera.width) / 2, this.world.height - this.camera.height);
+        console.log(this.camera.width + ', ' + this.camera.height);
+        this.world.resize(this.camera.width, this.camera.height * 2);
+        this.camera.setPosition(0, this.world.height - this.camera.height);
         this.camY0 = this.world.height - this.camera.height;
         this.camY1 = this.world.height - 2 * (this.camera.height - 32);
 
-        this.layer0 = this.add.group();
-        this.layer1 = this.add.group();
-        this.layer2 = this.add.group();
-        this.layer3 = this.add.group();
+        var bg = this.add.sprite(0, 0, 'in-game-background');
+
+        this.layer0 = this.add.group(); // Paths
+        this.layer1 = this.add.group(); // Nodes
+        this.layer2 = this.add.group(); // Packet
+        this.layer3 = this.add.group(); // Packet destination
 
         terminal = new Terminal(this);
         this.network = new Network([3, 4, 4, 4], this);
