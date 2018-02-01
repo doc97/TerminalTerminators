@@ -5,8 +5,6 @@ class Packet {
 	 * Reference to the Network Phaser.State state: Use 'this'
 	 */
     constructor(id, spawnNode, goalNode, type, network, state) {
-
-	
         this.id = id;
         this.goalNode = goalNode;
         this.type = type;
@@ -21,6 +19,7 @@ class Packet {
         this.progressSpeed = 0.05;
         this.progress = 0;
         this.stepEvent;
+        this.anim;
 
         if (type === 'packet') {
             this.sprite = state.layer2.create(this.x, this.y, 'packet');
@@ -42,12 +41,40 @@ class Packet {
             this.progress += this.progressSpeed;
             if (this.progress >= 1) {
                 if (this.dest === this.goalNode) {
-                    // Success
-                    this.destroy();
-                    return;
+                    if (type === 'virus') {
+                        // Spawn minigame
+                        this.anim = this.state.add.sprite(this.state.camera.width / 2, this.state.camera.height / 2 - 200, 'press-20');
+                        this.anim.animations.add('play');
+                        this.anim.animations.play('play', 10, true);
+                        this.anim.anchor.setTo(0.5, 0.5);
+                        this.anim.fixedToCamera = true;
+
+                        this.count = 20;
+                        this.state.input.keyboard.removeCallbacks();
+                        this.bKey = state.input.keyboard.addKey(Phaser.Keyboard.B);
+                        this.bKey.onDown.add(function() {
+                            this.count--;
+                            console.log(this.count);
+                            if (this.count === 0) {
+                                this.state.input.keyboard.removeKey(Phaser.Keyboard.B);
+                                this.state.terminal.restore(this.state);//input.keyboard.addCallbacks(this, null, null, this.state.terminal.keyPress);
+                                this.anim.destroy();
+                                this.destroy();
+                            }
+                        }, this);
+                        this.state.time.events.remove(this.stepEvent);
+                        return;
+                    } else {
+                        this.destroy();
+                        return;
+                    }
                 } else if (this.dest.activePath == null) {
-                    // What happened???
-                    console.log('Fail! ( you found an easter egg! )');
+                    var goBg = this.state.add.sprite(0, 0, 'gameover-background');
+                    goBg.fixedToCamera = true;
+
+                    this.state.time.events.remove(this.stepEvent);
+                    this.state.sound.stopAll();
+                    this.state.sound.play('track3');
                     this.destroy();
                     return;
                 } else {
@@ -69,6 +96,8 @@ class Packet {
 
         this.destroy = function() {
             delete this.network.packets[id];
+            this.state.layer2.remove(this.sprite);
+            this.state.layer3.remove(this.destText);
             this.sprite.destroy();
             this.destText.destroy();
             this.state.time.events.remove(this.stepEvent);
@@ -97,7 +126,7 @@ class Attacker {
             var id = this.network.nextId();
             var virusPercentage = this.state.rnd.between(1, 100);
             if (virusPercentage < 15)
-                this.network.packets.push(new Packet(id, spawnNode, this.network.nodeAt(this.network.nodeCoutn - 1), 'virus', this.network, this.state));
+                this.network.packets.push(new Packet(id, spawnNode, this.network.nodeAt(this.network.nodeCount - 1), 'virus', this.network, this.state));
             else
                 this.network.packets.push(new Packet(id, spawnNode, goalNode, 'packet', this.network, this.state));
 
@@ -134,7 +163,7 @@ class Node {
         
         switch (type) {
             case 'base' :
-                var sprite = this.state.layer1.create(x, y, 'base-three');
+                var sprite = this.state.layer1.create(x, y, 'base');
                 sprite.scale.setTo(0.5, 0.5);
                 sprite.anchor.setTo(0.5, 0.5);
                 this.idText = new Phaser.Text(state.game, x, y, id, { font: '25px Arial', fill: '#ffffff' });
@@ -142,11 +171,17 @@ class Node {
                 state.layer1.add(this.idText);
                 break;
             case 'honeypot' :
-                this.idText = new Phaser.Text(state.game, x, y, id + ' ( H )', { font: '25px Arial', fill: '#ffffff' });
+                var sprite = this.state.layer1.create(x, y, 'honeypot');
+                sprite.scale.setTo(0.5, 0.5);
+                sprite.anchor.setTo(0.5, 0.5);
+                this.idText = new Phaser.Text(state.game, x, y, id, { font: '25px Arial', fill: '#ffffff' });
                 this.idText.anchor.setTo(0.5, 0.5)
                 state.layer1.add(this.idText);
                 break;
             case 'node' :
+                var sprite = this.state.layer1.create(x, y, 'node');
+                sprite.scale.setTo(0.25, 0.25);
+                sprite.anchor.setTo(0.5, 0.5);
                 this.idText = new Phaser.Text(state.game, x, y, id, { font: '25px Arial', fill: '#ffffff' });
                 this.idText.anchor.setTo(0.5, 0.5)
                 state.layer1.add(this.idText);
@@ -201,7 +236,7 @@ class Network {
                     offsetX = -0.5;
 
                 var x = state.world.width / 2 - (nodeDistanceX * (offsetX + Math.floor(count / 2))) + j * nodeDistanceX;
-                var y = state.camY1 + state.camera.height / 2 - 100 - (nodeDistanceY * (offsetY + Math.floor(layers.length / 2))) + i * nodeDistanceY;
+                var y = state.camY1 + state.camera.height / 2 - 40 - (nodeDistanceY * (offsetY + Math.floor(layers.length / 2))) + i * nodeDistanceY;
                 var id = this.alphabet[index];
 
                 if (i < layers.length - 1) {
@@ -243,7 +278,7 @@ class Network {
         }
         graphics.endFill();
         var spriteX = state.world.width / 2;
-        var spriteY = state.camY1 + state.camera.height / 2 - 100;
+        var spriteY = state.camY1 + state.camera.height / 2 - 40;
         var sprite = state.layer0.create(spriteX, spriteY, graphics.generateTexture());
         sprite.anchor.setTo(0.5, 0.5);
         graphics.destroy();
@@ -300,10 +335,17 @@ class Terminal {
         this.buffer.anchor.setTo(0, 1);
         this.bufferLines = 0;
 
-        state.input.keyboard.addCallbacks(this, null, null, function(ch) {
+
+        this.keyPress = function(ch) {
             this.curCmd = this.command.text + ch;
             this.command.setText(this.curCmd, true);
-        });
+        }
+
+        this.restore = function(state) {
+            state.input.keyboard.addCallbacks(state.terminal, null, null, this.keyPress);
+        }
+
+        state.input.keyboard.addCallbacks(this, null, null, this.keyPress);
 
         this.enterKey = state.input.keyboard.addKey(Phaser.Keyboard.ENTER);
         this.enterKey.onDown.add(function() {
@@ -536,13 +578,15 @@ BasicGame.Game.prototype = {
         this.camY1 = this.world.height - 2 * (this.camera.height - 32);
 
         var bg = this.add.sprite(0, 0, 'in-game-background');
+        var bg_holo = this.add.sprite(0, 0, 'background-holo');
 
         this.layer0 = this.add.group(); // Paths
         this.layer1 = this.add.group(); // Nodes
         this.layer2 = this.add.group(); // Packet
         this.layer3 = this.add.group(); // Packet destination
+        this.layer4 = this.add.group(); // Minigames
 
-        terminal = new Terminal(this);
+        this.terminal = new Terminal(this);
         this.network = new Network([3, 4, 4, 4], this);
         attacker = new Attacker(this.network, this);
         attacker.start();
@@ -554,12 +598,6 @@ BasicGame.Game.prototype = {
             this.pauseMenu = new PauseMenu(this);
         this.pauseMenu.create();
        
-        anim = this.add.sprite(this.camera.width / 2, this.camera.height / 2 - 200, 'press-20');
-    	anim.animations.add('play');
-    	anim.animations.play('play', 10, true);
-    	anim.anchor.setTo(0.5, 0.5);
-        anim.fixedToCamera = true;
-
         this.showHelp = function() {
             this.help = this.add.sprite(this.camera.x + this.camera.width / 2, this.camera.y + this.camera.height / 2, 'help');
             this.help.anchor.setTo(0.5, 0.5);

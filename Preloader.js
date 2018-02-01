@@ -12,13 +12,14 @@ BasicGame.Preloader.prototype = {
         this.load.image('virus', 'assets/virus1.png');
         this.load.image('mute-audio', 'assets/mutebutton.png');
         this.load.image('main-menu-background', 'assets/terminalterminatorlogo.jpg');
-        this.load.image('base-zero', 'assets/homeicon_blank.png');
-        this.load.image('base-one', 'assets/homeicon_one.png');
-        this.load.image('base-two', 'assets/homeicon_two.png');
-        this.load.image('base-three', 'assets/homeicon_three.png');
+        this.load.image('base', 'assets/homeicon_filled.png');
         this.load.image('packet', 'assets/kube.png');
         this.load.image('in-game-background', 'assets/background_full.png');
         this.load.image('help', 'assets/tutorial_screen.jpg');
+        this.load.image('node', 'assets/node.png');
+        this.load.image('background-holo', 'assets/background_holo.png');
+        this.load.image('honeypot', 'assets/bin.png');
+        this.load.image('gameover-background', 'assets/gameover.png');
 
 		
         //minigame satuff
