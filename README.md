@@ -17,10 +17,15 @@ help - Shows the help page, click it to continue.
 
 ## Credits
 Oskari Sieranen - Game design
+
 Ivo van 't Wout - Game design, Graphics, Other
+
 Jimi Koivu - Graphics
+
 Riku Kallinen - Programming
+
 Daniel Riissanen - Programming
+
 Aziz Beliott - Music
 
 

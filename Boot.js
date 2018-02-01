@@ -16,8 +16,8 @@ BasicGame.Boot.prototype = {
 
         if (this.game.device.desktop) {
             //  If you have any desktop specific settings, they can go in here
-            //this.scale.pageAlignHorizontally = true;
-            //this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            this.scale.pageAlignHorizontally = true;
+            this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
         } else {
             //  Same goes for mobile settings.
             //  In this case we're saying "scale the game, no lower than 480x260 and no higher than 1024x768"
