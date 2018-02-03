@@ -1,5 +1,5 @@
 # Terminal Terminators
-A game made for Finnish Game Jam 2018
+A game made for Finnish Game Jam 2018, click [here](https://doc97.github.io/TerminalTerminators/ "Terminal Terminators") to play.
 
 ## Before playing
 Please fullscreen your browser and play on a Full HD screen. Moreover,
